@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <style>
+        body {
+            background-color: black;
+            font-size: large;
+            color: #0f0;
+        }
+        .main-container {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%) translateY(-40%);
+            top: 40%;
+            font-size: 1vw;
+            font-family: Dejavu Sans Mono, monospace;
+        }
+        .token-form {
+            text-align: center;
+            border: 1px solid #0f0;
+            padding: 5%;
+        }
+        pre {
+            display: inline;
+            word-wrap: break-word;
+        }
+
+        #qrcode {
+            margin: 10% 20% 0 0%;
+        }
+
+        .token-info{
+            white-space: nowrap;
+            display: inline-block;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <pre>
+  _____              _       _____          _
+ |_   _| __ __ _ ___| |__   |  ___|_ _  ___| |_ ___  _ __ _   _
+   | || '__/ _` / __| '_ \  | |_ / _` |/ __| __/ _ \| '__| | | |
+   | || | | (_| \__ \ | | | |  _| (_| | (__| || (_) | |  | |_| |
+   |_||_|  \__,_|___/_| |_| |_|  \__,_|\___|\__\___/|_|   \__, |
+                                                          |___/
+    </pre>
+    <div class="token-form">
+        <div class="token-info">
+            <canvas id="qrcode"></canvas>
+        </div>
+        <div class="token-info">
+            TOKEN KEY: {{ .TokenKey }}
+            <br/>
+            TOKEN: {{ .Token }}
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    var qrcode = new QRious({
+        element: document.getElementById("qrcode"),
+        background: 'black',
+        backgroundAlpha: 1,
+        foreground: '#0f0',
+        foregroundAlpha: 1,
+        level: 'H',
+        padding: 0,
+        size: 256,
+        value: "{{ .TokenKey }}:{{ .Token }}"
+    });
+</script>
+</body>
+</html>
