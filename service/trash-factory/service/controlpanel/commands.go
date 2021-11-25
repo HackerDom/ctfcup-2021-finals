@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
+	"trash-factory/pkg/models"
 )
 
 type ControlPanel struct {
@@ -48,7 +49,7 @@ func (cp *ControlPanel) DecryptMsg(msg []byte) ([]byte, error) {
 	decrypted := msg[:8]
 	magic := ""
 	for i := 0; i < len(payload); i++ {
-		decryptedByte := payload[i] ^ user.token[i % 8]
+		decryptedByte := payload[i] ^ user.Token[i % 8]
 		if i == 0 || i == 1 || i == 2 {
 			magic += fmt.Sprintf("%02x", decryptedByte)
 			if i == 2 && magic != fmt.Sprintf("%02x", greeting) {
@@ -98,7 +99,7 @@ func (cp *ControlPanel) CreateContainer(tokenKey string, args []byte) error {
 		descSize = len(args[1:])
 	}
 	fmt.Println(args[1:descSize])
-	container := Container{
+	container := models.Container{
 		ID: fmt.Sprintf("%08x", rand.Uint64()),
 		Size: containerSize,
 		Description: fmt.Sprintf("%s", args[1:descSize]),
