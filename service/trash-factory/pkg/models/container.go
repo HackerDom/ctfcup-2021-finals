@@ -9,28 +9,28 @@ type Container struct {
 	Description string
 }
 
-func (container *Container) SerializeNew() ([]byte, error) {
+func (container *Container) Serialize() ([]byte, error) {
 	writer := serializeb.NewWriter()
-	container.Serialize(&writer)
+	container.SerializeNext(&writer)
 	return writer.GetBytes()
 }
 
-func (container *Container) Serialize(writer *serializeb.Writer) {
+func (container *Container) SerializeNext(writer *serializeb.Writer) {
 	writer.WriteString(container.ID)
 	writer.WriteUint8(container.Size)
 	writer.WriteArray(serializeb.ToGenericArray(container.Items),
 		func(item interface{}, writer *serializeb.Writer) {
 			i := item.(Item)
-			i.Serialize(writer)
+			i.SerializeNext(writer)
 		})
 }
 
-func DeserializeContainerNew(buf []byte) (Container, error) {
+func DeserializeContainer(buf []byte) (Container, error) {
 	reader := serializeb.NewReader(buf)
-	return DeserializeContainer(reader)
+	return DeserializeContainerNext(reader)
 }
 
-func DeserializeContainer(reader serializeb.Reader) (Container, error) {
+func DeserializeContainerNext(reader serializeb.Reader) (Container, error) {
 	id, err := reader.ReadString()
 	if err != nil {
 		return Container{}, err
@@ -47,7 +47,7 @@ func DeserializeContainer(reader serializeb.Reader) (Container, error) {
 
 	items := make([]Item, itemCount)
 	for i := 0; i < itemCount; i++ {
-		items[i], err = DeserializeItem(reader)
+		items[i], err = DeserializeNextItem(reader)
 		if err != nil {
 			return Container{}, err
 		}
@@ -60,9 +60,9 @@ func DeserializeContainer(reader serializeb.Reader) (Container, error) {
 	}
 
 	return Container{
-		ID: id,
-		Size: size,
-		Items: items,
+		ID:          id,
+		Size:        size,
+		Items:       items,
 		Description: description,
 	}, nil
 }

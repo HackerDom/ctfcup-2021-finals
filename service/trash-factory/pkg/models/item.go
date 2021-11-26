@@ -8,25 +8,24 @@ type Item struct {
 	Description string
 }
 
-func (item *Item) SerializeNew() ([]byte, error)  {
+func (item *Item) Serialize() ([]byte, error) {
 	writer := serializeb.NewWriter()
-	item.Serialize(&writer)
+	item.SerializeNext(&writer)
 	return writer.GetBytes()
 }
 
-func (item *Item) Serialize(writer *serializeb.Writer) {
+func (item *Item) SerializeNext(writer *serializeb.Writer) {
 	writer.WriteUint8(item.Type)
 	writer.WriteUint8(item.Weight)
 	writer.WriteString(item.Description)
 }
 
-func DeserializeItemNew(buf []byte) (Item, error) {
+func DeserializeItem(buf []byte) (Item, error) {
 	reader := serializeb.NewReader(buf)
-	return DeserializeItem(reader)
+	return DeserializeNextItem(reader)
 }
 
-
-func DeserializeItem(reader serializeb.Reader) (Item, error) {
+func DeserializeNextItem(reader serializeb.Reader) (Item, error) {
 	itemType, err := reader.ReadUint8()
 	if err != nil {
 		return Item{}, err
@@ -42,8 +41,8 @@ func DeserializeItem(reader serializeb.Reader) (Item, error) {
 	}
 
 	return Item{
-		Type: itemType,
-		Weight: weight,
+		Type:        itemType,
+		Weight:      weight,
 		Description: description,
 	}, nil
 }

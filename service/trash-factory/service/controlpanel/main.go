@@ -9,7 +9,7 @@ import (
 
 var (
 	controlPanel = NewControlPanel()
-	greeting =  []byte {'\x03','\x13','\x37'}
+	greeting     = []byte{'\x03', '\x13', '\x37'}
 )
 
 func handleConn(conn net.Conn) {
@@ -30,8 +30,13 @@ func handleConn(conn net.Conn) {
 		fmt.Printf("Got %d\n", count)
 		fmt.Println(buffer)
 
-		statusCode := controlPanel.ProcessMessage(buffer[:count])
-		conn.Write([]byte {statusCode})
+		statusCode, response := controlPanel.ProcessMessage(buffer[:count])
+
+		if response != nil {
+			conn.Write(append([]byte{statusCode}, response...))
+		} else {
+			conn.Write([]byte{statusCode})
+		}
 	}
 }
 
@@ -49,7 +54,7 @@ func main() {
 		log.Fatal("Folder db/containers not exist")
 	}
 
-	l, err := net.Listen("tcp4", ":" + port)
+	l, err := net.Listen("tcp4", ":"+port)
 	if err != nil {
 		log.Fatal(err)
 	}

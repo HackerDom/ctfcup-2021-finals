@@ -5,18 +5,18 @@ import (
 )
 
 type User struct {
-	TokenKey string
+	TokenKey      string
 	Token         []byte
 	ContainersIds []string
 }
 
-func (user *User) SerializeNew()  ([]byte, error) {
+func (user *User) Serialize() ([]byte, error) {
 	writer := serializeb.NewWriter()
-	user.Serialize(&writer)
+	user.SerializeNext(&writer)
 	return writer.GetBytes()
 }
 
-func (user *User) Serialize(writer *serializeb.Writer) {
+func (user *User) SerializeNext(writer *serializeb.Writer) {
 	writer.WriteString(user.TokenKey)
 	writer.WriteBytes(user.Token)
 	writer.WriteArray(serializeb.ToGenericArray(user.ContainersIds),
@@ -25,12 +25,12 @@ func (user *User) Serialize(writer *serializeb.Writer) {
 		})
 }
 
-func DeserializeUserNew(buf []byte) (User, error) {
+func DeserializeUser(buf []byte) (User, error) {
 	reader := serializeb.NewReader(buf)
-	return DeserializeUser(reader)
+	return DeserializeNextUser(reader)
 }
 
-func DeserializeUser(reader serializeb.Reader) (User, error) {
+func DeserializeNextUser(reader serializeb.Reader) (User, error) {
 	tokenKey, err := reader.ReadString()
 	if err != nil {
 		return User{}, err
