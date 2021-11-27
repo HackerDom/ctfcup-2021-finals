@@ -166,19 +166,31 @@ func (cp *ControlPanel) GetItem(tokenKey string, opBytes []byte) ([]byte, error)
 func (cp *ControlPanel) PutItem(tokenKey string, opBytes []byte) ([]byte, error) {
 	op, err := commands.DeserializePutItemOpOp(opBytes)
 
-	containerId := "...." //TODO: implement container peeking logic. add id to request, or type field to container model
-	//TODO: validate size
-	container, err := cp.DB.GetContainer(containerId)
-	if err != nil {
-		return nil, err
-	}
-	container.Items = append(container.Items, op.Item)
-	err = cp.DB.SaveContainer(tokenKey, container)
+	user, err := cp.DB.GetUser(tokenKey)
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	for _, id := range user.ContainersIds {
+		container, err := cp.DB.GetContainer(id)
+		if err != nil {
+			return nil, err
+		}
+
+		if container.Size > uint8(len(container.Items)) {
+			if err != nil {
+				return nil, err
+			}
+			container.Items = append(container.Items, op.Item)
+			err = cp.DB.SaveContainer(tokenKey, container)
+			if err != nil {
+				return nil, err
+			}
+			return nil, nil
+		}
+	}
+
+	return nil, errors.New("Can't find acceptable container")
 }
 
 func (cp *ControlPanel) GetContainerInfo(tokenKey string, opBytes []byte) ([]byte, error) {

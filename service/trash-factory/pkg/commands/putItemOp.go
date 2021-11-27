@@ -6,8 +6,8 @@ type PutItemOp struct {
 	models.Item
 }
 
-func (op PutItemOp) Serialize() ([]byte, error) {
-	return op.Serialize()
+func (op PutItemOp) Serialize() []byte {
+	return op.Item.Serialize()
 }
 
 func DeserializePutItemOpOp(buf []byte) (PutItemOp, error) {
