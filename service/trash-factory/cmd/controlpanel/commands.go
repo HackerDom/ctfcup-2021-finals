@@ -133,8 +133,10 @@ func (cp *ControlPanel) GetUser(tokenKey string, opBytes []byte) ([]byte, error)
 func (cp *ControlPanel) CreateUser(tokenKey string, opBytes []byte) ([]byte, error) {
 	op, err := commands.DeserializeCreateUserOp(opBytes)
 
+	//TODO: validate admin token
+
 	user := models.User{
-		TokenKey:      tokenKey,
+		TokenKey:      op.TokenKey,
 		Token:         op.Token,
 		ContainersIds: make([]string, 0),
 	}
