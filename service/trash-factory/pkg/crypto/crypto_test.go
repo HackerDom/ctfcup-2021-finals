@@ -40,7 +40,7 @@ func TestEncryption(t *testing.T) {
 	cryptor, magicBytes := GetCryptor()
 	payload := generateBytes()
 
-	ct, err := cryptor.EncryptMsg(user, payload)
+	ct, err := cryptor.EncryptMsg(user.TokenKey, user.Token, payload)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -67,11 +67,11 @@ func TestDecryption(t *testing.T) {
 	user := GetUser()
 	cryptor, _ := GetCryptor()
 	payload := generateBytes()
-	ct, err := cryptor.EncryptMsg(user, payload)
+	ct, err := cryptor.EncryptMsg(user.TokenKey, user.Token, payload)
 	if err != nil {
 		log.Panicln(err)
 	}
-	pt, err := cryptor.DecryptMsg(user, ct[8:])
+	pt, err := cryptor.DecryptMsg(user.Token, ct[8:])
 	if bytes.Compare(payload, pt) != 0 || err != nil {
 		t.Fatalf(`cant get same message. Payload: %x, pt: %x. Err: %v`, payload, pt, err)
 	}

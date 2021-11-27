@@ -47,16 +47,14 @@ func (cp *ControlPanel) ProcessMessage(msg []byte) (byte, []byte) {
 		return commands.StatusIncorrectSignature, nil
 	}
 
-	plainText, err := cp.Cryptor.DecryptMsg(user, msg[8:])
+	plainText, err := cp.Cryptor.DecryptMsg(user.Token, msg[8:])
 	if err != nil {
 		log.Warn(err)
 		return commands.StatusIncorrectSignature, nil
 	}
 
-	log.Debugf("PLAIN TEXT: %02x\n", plainText)
-
 	statusCode, response := cp.RunCommand(plainText)
-	cipherText, err := cp.Cryptor.EncryptMsg(user, response)
+	cipherText, err := cp.Cryptor.EncryptMsg(user.TokenKey, user.Token, response)
 	if err != nil {
 		return commands.StatusInternalError, nil
 	}
