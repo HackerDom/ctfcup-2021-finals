@@ -174,6 +174,7 @@ func AddTestUser() (string, error) {
 	binary.LittleEndian.PutUint64(t, rand.Uint64())
 	op := commands.CreateUserOp{
 		Token: t,
+		TokenKey: tokenKey,
 	}
 	_, err := controlPanel.CreateUser(tokenKey, op.Serialize())
 	if err != nil {
