@@ -58,7 +58,7 @@ func (cp *ControlPanel) DecryptMsg(msg []byte) ([]byte, error) {
 	decrypted := msg[:8]
 	magic := ""
 	for i := 0; i < len(payload); i++ {
-		decryptedByte := payload[i] ^ user.Token[i%8]
+		decryptedByte := payload[i] ^ user.Token[i % len(user.Token)]
 		if i == 0 || i == 1 || i == 2 {
 			magic += fmt.Sprintf("%02x", decryptedByte)
 			if i == 2 && magic != fmt.Sprintf("%02x", greeting) {
