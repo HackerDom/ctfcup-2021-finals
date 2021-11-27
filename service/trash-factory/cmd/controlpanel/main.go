@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -169,8 +170,10 @@ func AddTestContainer(tokenKey string) error {
 
 func AddTestUser() (string, error) {
 	tokenKey := fmt.Sprintf("%08x", rand.Uint64())
+	t := make([]byte, 8)
+	binary.LittleEndian.PutUint64(t, rand.Uint64())
 	op := commands.CreateUserOp{
-		Token: []byte("secret"),
+		Token: t,
 	}
 	_, err := controlPanel.CreateUser(tokenKey, op.Serialize())
 	if err != nil {

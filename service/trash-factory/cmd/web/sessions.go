@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"github.com/gofrs/uuid"
-	log "github.com/sirupsen/logrus"
+	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -24,19 +24,15 @@ func NewSessions() *Sessions {
 }
 
 func (s *Sessions) Create(value string) (string, error) {
-	uuid, err := uuid.NewV4()
-	if err != nil {
-		log.Warnf("Session creating failed: %s", err.Error())
-		return "", err
-	}
+	uuid := strconv.FormatUint(rand.Uint64(), 10)
 
-	s.storage = append(s.storage, Session{uuid: uuid.String(), value: "", creationDate: time.Now().Unix()})
+	s.storage = append(s.storage, Session{uuid: uuid, value: value, creationDate: time.Now().Unix()})
 	s.Clear()
-	return uuid.String(), nil
+	return uuid, nil
 }
 
 func (s *Sessions) Clear() {
-	if time.Now().Unix() - s.storage[0].creationDate > 15 * 60 {
+	if time.Now().Unix()-s.storage[0].creationDate > 15*60 {
 		s.storage = s.storage[1:]
 	}
 }
