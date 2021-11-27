@@ -177,7 +177,7 @@ func (cp *ControlPanel) PutItem(tokenKey string, opBytes []byte) ([]byte, error)
 	op, err := commands.DeserializePutItemOpOp(opBytes)
 
 	containerId := "...." //TODO: implement container peeking logic. add id to request, or type field to container model
-
+	//TODO: validate size
 	container, err := cp.DB.GetContainer(containerId)
 	if err != nil {
 		return nil, err
