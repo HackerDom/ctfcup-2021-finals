@@ -17,4 +17,5 @@ const (
 	StatusFunctionNotFound   = '\x02'
 	StatusCommandExecError   = '\x03'
 	StatusCommandNotFound    = '\x04'
+	StatusInternalError      = '\xff'
 )

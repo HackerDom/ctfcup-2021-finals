@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"trash-factory/pkg/commands"
+	"trash-factory/pkg/crypto"
 	"trash-factory/pkg/models"
 	"trash-factory/pkg/serializeb"
 )
@@ -13,6 +15,7 @@ import (
 type ControlPanel struct {
 	Commands map[byte]interface{}
 	DB       *DataBase
+	Cryptor  *crypto.Cryptor
 }
 
 func NewControlPanel() *ControlPanel {
@@ -28,6 +31,7 @@ func NewControlPanel() *ControlPanel {
 		commands.ListUsers:        cp.ListUsers,
 	}
 	cp.DB = NewDataBase()
+	cp.Cryptor = crypto.NewCryptor(magic)
 	return &cp
 }
 
@@ -37,38 +41,26 @@ func (cp *ControlPanel) ProcessMessage(msg []byte) (byte, []byte) {
 		return commands.StatusIncorrectSignature, nil
 	}
 
-	plainText, err := cp.DecryptMsg(msg)
+	user, err := cp.DB.GetUser(hex.EncodeToString(msg[:8]))
 	if err != nil {
-		log.Error(err)
-		return commands.StatusFunctionNotFound, nil //TODO: use StatusIncorrectSignature, or rename
+		log.Warn(err)
+		return commands.StatusIncorrectSignature, nil
 	}
+
+	plainText, err := cp.Cryptor.DecryptMsg(user, msg[8:])
+	if err != nil {
+		log.Warn(err)
+		return commands.StatusIncorrectSignature, nil
+	}
+
+	log.Debugf("PLAIN TEXT: %02x\n", plainText)
 
 	statusCode, response := cp.RunCommand(plainText)
-
-	return statusCode, response
-}
-
-func (cp *ControlPanel) DecryptMsg(msg []byte) ([]byte, error) {
-	tokenKey := msg[:8]
-	user, err := cp.DB.GetUser(fmt.Sprintf("%08x", tokenKey))
+	cipherText, err := cp.Cryptor.EncryptMsg(user, response)
 	if err != nil {
-		return nil, err
+		return commands.StatusInternalError, nil
 	}
-	payload := msg[8:]
-	decrypted := msg[:8]
-	magic := ""
-	for i := 0; i < len(payload); i++ {
-		decryptedByte := payload[i] ^ user.Token[i % len(user.Token)]
-		if i == 0 || i == 1 || i == 2 {
-			magic += fmt.Sprintf("%02x", decryptedByte)
-			if i == 2 && magic != fmt.Sprintf("%02x", greeting) {
-				return make([]byte, 0), errors.New("decryption failed: incorrect magic key")
-			}
-			continue
-		}
-		decrypted = append(decrypted, decryptedByte)
-	}
-	return decrypted, nil
+	return statusCode, cipherText
 }
 
 func (cp *ControlPanel) RunCommand(msg []byte) (byte, []byte) {

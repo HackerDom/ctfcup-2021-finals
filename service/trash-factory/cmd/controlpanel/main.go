@@ -9,11 +9,11 @@ import (
 
 var (
 	controlPanel = NewControlPanel()
-	greeting     = []byte{'\x03', '\x13', '\x37'}
+	magic        = []byte{'\x03', '\x13', '\x37'}
 )
 
 func handleConn(conn net.Conn) {
-	_, err := conn.Write(greeting)
+	_, err := conn.Write(magic)
 	if err != nil {
 		log.Error(err)
 		return
