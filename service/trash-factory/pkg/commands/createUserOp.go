@@ -6,7 +6,7 @@ type CreateUserOp struct {
 	Token []byte
 }
 
-func (op CreateUserOp) Serialize() ([]byte, error) {
+func (op CreateUserOp) Serialize() []byte {
 	writer := serializeb.NewWriter()
 	writer.WriteBytes(op.Token)
 	return writer.GetBytes()

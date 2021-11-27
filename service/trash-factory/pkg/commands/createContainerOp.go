@@ -9,7 +9,7 @@ type CreateContainerOp struct {
 	Description string
 }
 
-func (op CreateContainerOp) Serialize() ([]byte, error) {
+func (op CreateContainerOp) Serialize() []byte {
 	writer := serializeb.NewWriter()
 	writer.WriteUint8(op.Size)
 	writer.WriteString(op.Description)

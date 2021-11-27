@@ -8,7 +8,7 @@ type Item struct {
 	Description string
 }
 
-func (item *Item) Serialize() ([]byte, error) {
+func (item *Item) Serialize() []byte {
 	writer := serializeb.NewWriter()
 	item.SerializeNext(&writer)
 	return writer.GetBytes()

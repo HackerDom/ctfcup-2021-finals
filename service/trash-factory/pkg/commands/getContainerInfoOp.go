@@ -6,7 +6,7 @@ type GetContainerInfoOp struct {
 	ContainerID string
 }
 
-func (op GetContainerInfoOp) Serialize() ([]byte, error) {
+func (op GetContainerInfoOp) Serialize() []byte {
 	writer := serializeb.NewWriter()
 	writer.WriteString(op.ContainerID)
 	return writer.GetBytes()

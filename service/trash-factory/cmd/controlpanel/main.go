@@ -5,6 +5,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net"
 	"os"
+	"trash-factory/pkg/models"
 )
 
 var (
@@ -41,6 +42,24 @@ func handleConn(conn net.Conn) {
 }
 
 func main() {
+	base := NewDataBase()
+	tokenKey := "testuser"
+	err := base.SaveUser(&models.User{
+		TokenKey:      tokenKey,
+		Token:         []byte("testtoken"),
+		ContainersIds: []string{"testid1", "testid2"},
+	})
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	user, err := base.GetUser(tokenKey)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	log.Info(user)
+	return
 	port, exist := os.LookupEnv("PORT")
 	if !exist {
 		log.Fatal("PORT not found")

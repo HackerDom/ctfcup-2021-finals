@@ -98,11 +98,11 @@ func (cp *ControlPanel) ListContainers(tokenKey string, opBytes []byte) ([]byte,
 	}
 
 	writer := serializeb.NewWriter()
-	writer.WriteArray(serializeb.ToGenericArray(containersIds), func(item interface{}, writer *serializeb.Writer) {
-		writer.WriteString(item.(string))
-	})
-
-	return writer.GetBytes()
+	writer.WriteArraySize(len(containersIds))
+	for _, id := range containersIds {
+		writer.WriteString(id)
+	}
+	return writer.GetBytes(), nil
 }
 
 func (cp *ControlPanel) ListUsers(tokenKey string, opBytes []byte) ([]byte, error) {
@@ -113,12 +113,12 @@ func (cp *ControlPanel) ListUsers(tokenKey string, opBytes []byte) ([]byte, erro
 
 	writer := serializeb.NewWriter()
 
-	//TODO:rewrite array serialization
-	writer.WriteArray(serializeb.ToGenericArray(users), func(item interface{}, writer *serializeb.Writer) {
-		writer.WriteString(item.(string))
-	})
+	writer.WriteArraySize(len(*users))
+	for _, user := range *users {
+		writer.WriteString(user)
+	}
 
-	return writer.GetBytes()
+	return writer.GetBytes(), nil
 }
 
 func (cp *ControlPanel) GetUser(tokenKey string, opBytes []byte) ([]byte, error) {
@@ -127,7 +127,7 @@ func (cp *ControlPanel) GetUser(tokenKey string, opBytes []byte) ([]byte, error)
 		return nil, err
 	}
 
-	return user.Serialize()
+	return user.Serialize(), nil
 }
 
 func (cp *ControlPanel) CreateUser(tokenKey string, opBytes []byte) ([]byte, error) {
@@ -160,7 +160,7 @@ func (cp *ControlPanel) GetItem(tokenKey string, opBytes []byte) ([]byte, error)
 		return nil, err
 	}
 
-	return container.Items[op.ItemIndex].Serialize()
+	return container.Items[op.ItemIndex].Serialize(), nil
 }
 
 func (cp *ControlPanel) PutItem(tokenKey string, opBytes []byte) ([]byte, error) {

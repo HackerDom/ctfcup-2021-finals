@@ -7,7 +7,7 @@ type GetItemOp struct {
 	ItemIndex   int
 }
 
-func (op GetItemOp) Serialize() ([]byte, error) {
+func (op GetItemOp) Serialize() []byte {
 	writer := serializeb.NewWriter()
 	writer.WriteString(op.ContainerID)
 	writer.WriteUint32(op.ItemIndex)

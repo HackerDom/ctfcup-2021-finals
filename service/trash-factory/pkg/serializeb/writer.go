@@ -45,18 +45,11 @@ func (writer *Writer) WriteBytes(value []byte) *Writer {
 	return writer
 }
 
-func (writer *Writer) WriteArray(items []interface{}, serializeItem func(item interface{}, writer *Writer)) *Writer {
-	writer.WriteUint32(len(items))
-	for _, item := range items {
-		serializeItem(item, writer)
-	}
+func (writer *Writer) WriteArraySize(size int) *Writer {
+	writer.WriteUint32(size)
 	return writer
 }
 
-func (writer Writer) GetBytes() ([]byte, error) {
-	return writer.GetBytes()
-}
-
-func ToGenericArray(arr ...interface{}) []interface{} {
-	return arr
+func (writer Writer) GetBytes() []byte {
+	return writer.buffer.Bytes()
 }

@@ -12,17 +12,16 @@ type Container struct {
 func (container *Container) Serialize() ([]byte, error) {
 	writer := serializeb.NewWriter()
 	container.SerializeNext(&writer)
-	return writer.GetBytes()
+	return writer.GetBytes(), nil
 }
 
 func (container *Container) SerializeNext(writer *serializeb.Writer) {
 	writer.WriteString(container.ID)
 	writer.WriteUint8(container.Size)
-	writer.WriteArray(serializeb.ToGenericArray(container.Items),
-		func(item interface{}, writer *serializeb.Writer) {
-			i := item.(Item)
-			i.SerializeNext(writer)
-		})
+	writer.WriteArraySize(len(container.Items))
+	for _, item := range container.Items {
+		item.SerializeNext(writer)
+	}
 }
 
 func DeserializeContainer(buf []byte) (Container, error) {

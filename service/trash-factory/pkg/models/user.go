@@ -10,7 +10,7 @@ type User struct {
 	ContainersIds []string
 }
 
-func (user *User) Serialize() ([]byte, error) {
+func (user *User) Serialize() []byte {
 	writer := serializeb.NewWriter()
 	user.SerializeNext(&writer)
 	return writer.GetBytes()
@@ -19,10 +19,10 @@ func (user *User) Serialize() ([]byte, error) {
 func (user *User) SerializeNext(writer *serializeb.Writer) {
 	writer.WriteString(user.TokenKey)
 	writer.WriteBytes(user.Token)
-	writer.WriteArray(serializeb.ToGenericArray(user.ContainersIds),
-		func(item interface{}, writer *serializeb.Writer) {
-			writer.WriteString(item.(string))
-		})
+	writer.WriteArraySize(len(user.ContainersIds))
+	for _, id := range user.ContainersIds {
+		writer.WriteString(id)
+	}
 }
 
 func DeserializeUser(buf []byte) (User, error) {
