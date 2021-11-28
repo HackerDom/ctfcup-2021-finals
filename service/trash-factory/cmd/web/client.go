@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"math/rand"
 	"net"
 	"time"
@@ -68,19 +69,6 @@ func (client *Client) ParseResponse(cryptor *crypto.Cryptor, data []byte) (*Resp
 	}, nil
 }
 
-func (client *Client) readBytes(conn net.Conn) ([]byte, error) {
-	buffer := make([]byte, 128)
-	bytesCount, err := conn.Read(buffer)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-	if bytesCount < 1 {
-		return nil, errors.New("incorrect bytes count")
-	}
-	return buffer[:bytesCount], nil
-}
-
 func (client *Client) sendMessage(msg []byte) (*Response, error) {
 	dialer := net.Dialer{Timeout: 10 * time.Second}
 	conn, err := dialer.Dial("tcp", client.address)
@@ -89,7 +77,7 @@ func (client *Client) sendMessage(msg []byte) (*Response, error) {
 	}
 	defer conn.Close()
 
-	magic, err := client.readBytes(conn)
+	magic, err := client.readBytesOnce(conn)
 
 	if err != nil {
 		return nil, err
@@ -108,7 +96,7 @@ func (client *Client) sendMessage(msg []byte) (*Response, error) {
 		return nil, errors.New("bytes sending error")
 	}
 
-	response, err := client.readBytes(conn)
+	response, err := client.readaAllByte(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +110,30 @@ func (client *Client) sendMessage(msg []byte) (*Response, error) {
 	return parsedResponse, nil
 }
 
+func (client *Client) readBytesOnce(conn net.Conn) ([]byte, error) {
+	buffer := make([]byte, 128)
+	bytesCount, err := conn.Read(buffer)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	if bytesCount < 1 {
+		return nil, errors.New("incorrect bytes count")
+	}
+	return buffer[:bytesCount], nil
+}
+
+func (client *Client) readaAllByte(conn net.Conn) ([]byte, error) {
+	allBytes, err := ioutil.ReadAll(conn)
+	if err != nil {
+		return nil, err
+	}
+	if len(allBytes) < 1 {
+		return nil, errors.New("incorrect bytes bytesCount")
+	}
+	return allBytes, nil
+}
+
 func (client *Client) createUser() (string, error) {
 	msg := []byte{commands.CreateUser}
 
@@ -131,7 +143,7 @@ func (client *Client) createUser() (string, error) {
 	binary.LittleEndian.PutUint64(tokenKey, rand.Uint64())
 
 	createUserOp := commands.CreateUserOp{
-		Token: token,
+		Token:    token,
 		TokenKey: hex.EncodeToString(tokenKey),
 	}
 	msg = append(msg, createUserOp.Serialize()...)

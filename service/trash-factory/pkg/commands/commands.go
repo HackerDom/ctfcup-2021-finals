@@ -9,6 +9,7 @@ const (
 	CreateUser       = '\x06'
 	GetUser          = '\x07'
 	ListUsers        = '\x08'
+	GetStatistic     = '\x09'
 )
 
 const (
