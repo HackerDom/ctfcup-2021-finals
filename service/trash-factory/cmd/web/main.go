@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
 	"html/template"
 	"math/rand"
@@ -11,7 +12,7 @@ import (
 )
 
 var (
-	sessions = NewSessions()
+	sessionsStorage = sessions.NewCookieStore([]byte("asdasdasdw"))
 	client   = NewClient("127.0.0.1:9090", "4d65822107fcfd52", "4f163f5f0f9a6278")
 )
 
@@ -21,17 +22,15 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c, err := r.Cookie("session")
-	if err != nil || !sessions.IsCorrectSession(c.Value) {
-		uuid, err := sessions.Create("")
+	session, err := sessionsStorage.Get(r, "session")
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 
-		if err != nil {
-			log.Error("Can't get session id")
-			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-			return
-		}
-
-		http.SetCookie(w, &http.Cookie{Name: "session", Value: uuid})
+	if err = session.Save(r, w); err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+		return
 	}
 
 	indexTmpl, err := template.ParseFiles("templates/index.html")
@@ -49,27 +48,25 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c, err := r.Cookie("session")
-	if err != nil || !sessions.IsCorrectSession(c.Value) {
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		return
-	}
-	session := c.Value
-	tokenKey, _ := sessions.GetValue(session)
+	session, err := sessionsStorage.Get(r, "session")
 
-	if tokenKey == "" {
-		tokenKey, err := client.createUser()
+	tokenKey, found := session.Values["tokenKey"]
+	if !found {
+		tokenKey, err = client.createUser()
 		if err != nil {
-			log.Error(err)
-			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		sessions.UpdateValue(session, tokenKey)
+		session.Values["tokenKey"] = tokenKey
+		if err = session.Save(r, w); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
-	user, err := client.getUser(tokenKey)
+	user, err := client.getUser(tokenKey.(string))
 	if err != nil {
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -81,7 +78,7 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 	indexTmpl.Execute(w, user)
 }
 
-func main1() {
+func main() {
 	port, exist := os.LookupEnv("PORT")
 	if !exist {
 		log.Fatal("PORT not found")
@@ -96,7 +93,7 @@ func main1() {
 	}
 }
 
-func main() {
+func main1() {
 	tokenKey, err := client.createUser()
 	if err != nil {
 		log.Fatal(err)

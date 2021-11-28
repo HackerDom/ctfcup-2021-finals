@@ -55,7 +55,7 @@
         <div class="token-info">
             TOKEN KEY: {{ .TokenKey }}
             <br/>
-            TOKEN: {{ .Token }}
+            TOKEN: {{ .Token | printf "%x" }}
         </div>
     </div>
 </div>
