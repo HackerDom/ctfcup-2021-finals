@@ -18,6 +18,7 @@ var (
 )
 
 func handleConn(conn net.Conn) {
+	defer conn.Close()
 	_, err := conn.Write(magic)
 	if err != nil {
 		log.Error(err)
@@ -36,7 +37,6 @@ func handleConn(conn net.Conn) {
 		fmt.Println(buffer)
 
 		statusCode, response := controlPanel.ProcessMessage(buffer[:count])
-
 		if response != nil {
 			conn.Write(append([]byte{statusCode}, response...))
 		} else {

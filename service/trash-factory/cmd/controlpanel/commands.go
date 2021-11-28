@@ -47,13 +47,13 @@ func (cp *ControlPanel) ProcessMessage(msg []byte) (byte, []byte) {
 		return commands.StatusIncorrectSignature, nil
 	}
 
-	plainText, err := cp.Cryptor.DecryptMsg(user.Token, msg[8:])
+	payload, err := cp.Cryptor.DecryptMsg(user.Token, msg[8:])
 	if err != nil {
 		log.Warn(err)
 		return commands.StatusIncorrectSignature, nil
 	}
 
-	statusCode, response := cp.RunCommand(plainText)
+	statusCode, response := cp.RunCommand(user, payload)
 	cipherText, err := cp.Cryptor.EncryptMsg(user.TokenKey, user.Token, response)
 	if err != nil {
 		return commands.StatusInternalError, nil
@@ -61,16 +61,11 @@ func (cp *ControlPanel) ProcessMessage(msg []byte) (byte, []byte) {
 	return statusCode, cipherText
 }
 
-func (cp *ControlPanel) RunCommand(msg []byte) (byte, []byte) {
-	tokenKey := fmt.Sprintf("%08x", msg[:8])
-	command := msg[8]
-	args := make([]byte, 0)
-	if len(msg) > 9 {
-		args = msg[9:]
-	}
-
+func (cp *ControlPanel) RunCommand(user *models.User, msg []byte) (byte, []byte) {
+	command := msg[0]
+	args := msg[1:]
 	if value, ok := cp.Commands[command]; ok {
-		response, err := value.(func(string, []byte) ([]byte, error))(tokenKey, args)
+		response, err := value.(func(string, []byte) ([]byte, error))(user.TokenKey, args)
 		if err != nil {
 			log.Errorf("func \\x%02x exec error: %s", command, err)
 			return commands.StatusCommandExecError, nil

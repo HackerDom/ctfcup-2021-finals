@@ -101,5 +101,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	rand.Seed(time.Now().Unix())
 	log.Info(tokenKey)
+	user, err := client.getUser(tokenKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Info(user)
 }

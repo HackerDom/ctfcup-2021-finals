@@ -7,12 +7,12 @@ import (
 )
 
 type Cryptor struct {
-	magic []byte
+	Magic []byte
 }
 
 func NewCryptor(magic []byte) *Cryptor {
 	return &Cryptor{
-		magic: magic,
+		Magic: magic,
 	}
 }
 
@@ -21,9 +21,8 @@ func (cryptor *Cryptor) EncryptMsg(tokenKey string, token, payload []byte) ([]by
 	if err != nil {
 		return nil, err
 	}
-
-	payload = append(cryptor.magic, payload...)
-	for i, b := range payload {
+	payloadWithMagic := append(cryptor.Magic, payload...)
+	for i, b := range payloadWithMagic {
 		ct = append(ct, b ^ token[i % len(token)])
 	}
 	return ct, nil
@@ -31,7 +30,7 @@ func (cryptor *Cryptor) EncryptMsg(tokenKey string, token, payload []byte) ([]by
 
 
 func (cryptor *Cryptor) DecryptMsg(token, msg []byte) ([]byte, error) {
-	magicLen := len(cryptor.magic)
+	magicLen := len(cryptor.Magic)
 	if len(msg) <  magicLen {
 		return nil, errors.New("incorrect message len")
 	}
@@ -40,8 +39,8 @@ func (cryptor *Cryptor) DecryptMsg(token, msg []byte) ([]byte, error) {
 	for i, b := range msg {
 		decryptedBytes[i] = b ^ token[i % len(token)]
 	}
-	if bytes.Compare(decryptedBytes[:magicLen], cryptor.magic) != 0 {
-		return nil, errors.New("incorrect message magic")
+	if bytes.Compare(decryptedBytes[:magicLen], cryptor.Magic) != 0 {
+		return nil, errors.New("incorrect message Magic")
 	}
 
 	return decryptedBytes[magicLen:], nil

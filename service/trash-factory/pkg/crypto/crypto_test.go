@@ -30,7 +30,7 @@ func GetCryptor() (*Cryptor, []byte) {
 		log.Panicln(err)
 	}
 	return &Cryptor{
-		magic: magicBytes,
+		Magic: magicBytes,
 	}, magicBytes
 }
 

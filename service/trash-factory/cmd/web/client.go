@@ -22,6 +22,12 @@ type Client struct {
 	token         []byte
 }
 
+type Response struct {
+	statusCode       byte
+	payload          []byte
+	decryptedPayload []byte
+}
+
 func NewClient(addr string, tokenKey string, token string) *Client {
 	tokenKeyBytes, err := hex.DecodeString(tokenKey)
 	if err != nil {
@@ -40,10 +46,31 @@ func NewClient(addr string, tokenKey string, token string) *Client {
 	}
 }
 
+func (client *Client) ParseResponse(cryptor *crypto.Cryptor, data []byte) (*Response, error) {
+	if len(data) < 1+len(client.tokenKeyBytes)+len(cryptor.Magic) {
+		return nil, errors.New("incorrect response len")
+	}
+
+	if bytes.Compare(data[1:len(client.tokenKeyBytes)+1], client.tokenKeyBytes) != 0 {
+		return nil, errors.New("incorrect returned tokenkey")
+	}
+
+	payload := data[1+len(client.tokenKeyBytes):]
+	decryptedPayload, err := cryptor.DecryptMsg(client.token, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Response{
+		statusCode:       data[0],
+		payload:          payload,
+		decryptedPayload: decryptedPayload,
+	}, nil
+}
+
 func (client *Client) readBytes(conn net.Conn) ([]byte, error) {
 	buffer := make([]byte, 128)
 	bytesCount, err := conn.Read(buffer)
-	log.Info(bytesCount, buffer)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -51,10 +78,10 @@ func (client *Client) readBytes(conn net.Conn) ([]byte, error) {
 	if bytesCount < 1 {
 		return nil, errors.New("incorrect bytes count")
 	}
-	return buffer, nil
+	return buffer[:bytesCount], nil
 }
 
-func (client *Client) sendMessage(msg []byte) ([]byte, error) {
+func (client *Client) sendMessage(msg []byte) (*Response, error) {
 	dialer := net.Dialer{Timeout: 10 * time.Second}
 	conn, err := dialer.Dial("tcp", client.address)
 	if err != nil {
@@ -85,53 +112,54 @@ func (client *Client) sendMessage(msg []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Infof("RESPONSE: %x", response)
 
-	if len(response) < 9 || bytes.Compare(client.tokenKeyBytes, response[:8]) != 0 {
-		return nil, errors.New("incorrect response")
-	}
-
-	decryptedResp, err := cryptor.DecryptMsg(client.token, response[8:])
+	parsedResponse, err := client.ParseResponse(cryptor, response)
 	if err != nil {
 		return nil, err
 	}
 
-	return decryptedResp, nil
+	return parsedResponse, nil
 }
 
 func (client *Client) createUser() (string, error) {
 	msg := []byte{commands.CreateUser}
-	tokenKey := make([]byte, 8)
-	binary.LittleEndian.PutUint64(tokenKey, rand.Uint64())
-	msg = append(msg, tokenKey...)
+
 	token := make([]byte, 8)
 	binary.LittleEndian.PutUint64(token, rand.Uint64())
-	msg = append(msg, token...)
+	tokenKey := make([]byte, 8)
+	binary.LittleEndian.PutUint64(tokenKey, rand.Uint64())
+
+	createUserOp := commands.CreateUserOp{
+		Token: token,
+		TokenKey: hex.EncodeToString(tokenKey),
+	}
+	msg = append(msg, createUserOp.Serialize()...)
 	response, err := client.sendMessage(msg)
 	if err != nil {
 		return "", err
 	}
-	if response[0] != '\x00' {
-		return "", errors.New(fmt.Sprintf("cant create user: %02x", response[0]))
+	if response.statusCode != '\x00' {
+		return "", errors.New(fmt.Sprintf("cant create user: %02x", response.statusCode))
 	}
 
 	return hex.EncodeToString(tokenKey), nil
 }
 
 func (client *Client) getUser(tokenKey string) (*models.User, error) {
-	tokenKeyBytes, err := hex.DecodeString(tokenKey)
-	if err != nil {
-		return nil, err
-	}
 	msg := []byte{commands.GetUser}
-	msg = append(msg, tokenKeyBytes...)
+	getUserOp := commands.GetUserOp{
+		TokenKey: tokenKey,
+	}
+	msg = append(msg, getUserOp.Serialize()...)
 	response, err := client.sendMessage(msg)
 	if err != nil {
 		return nil, err
 	}
-	if response[0] != '\x00' {
-		return nil, errors.New(fmt.Sprintf("cant get user: %02x", response[0]))
+	if response.statusCode != '\x00' {
+		return nil, errors.New(fmt.Sprintf("cant get user: %02x", response.statusCode))
 	}
-	user, err := models.DeserializeUser(response[1:])
+	user, err := models.DeserializeUser(response.decryptedPayload)
 	if err != nil {
 		return nil, err
 	}
