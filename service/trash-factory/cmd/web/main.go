@@ -21,7 +21,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusMethodNotAllowed)
 		return
 	}
-
 	session, err := sessionsStorage.Get(r, "session")
 	if err != nil {
 		http.Error(w, "", http.StatusInternalServerError)

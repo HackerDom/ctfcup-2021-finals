@@ -70,7 +70,7 @@
         level: 'H',
         padding: 0,
         size: 256,
-        value: "{{ .TokenKey }}:{{ .Token }}"
+        value: '{{ .TokenKey }}:{{ .Token | printf "%x" }}'
     });
 </script>
 </body>
