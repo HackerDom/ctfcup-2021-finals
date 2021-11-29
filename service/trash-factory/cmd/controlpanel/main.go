@@ -26,22 +26,20 @@ func handleConn(conn net.Conn) {
 	}
 
 	buffer := make([]byte, 128)
-	for {
-		count, err := conn.Read(buffer)
+	count, err := conn.Read(buffer)
 
-		if err != nil || count < 1 {
-			return
-		}
+	if err != nil || count < 1 {
+		return
+	}
 
-		fmt.Printf("Got %d\n", count)
-		fmt.Println(buffer)
+	fmt.Printf("Got %d\n", count)
+	fmt.Println(buffer)
 
-		statusCode, response := controlPanel.ProcessMessage(buffer[:count])
-		if response != nil {
-			conn.Write(append([]byte{statusCode}, response...))
-		} else {
-			conn.Write([]byte{statusCode})
-		}
+	statusCode, response := controlPanel.ProcessMessage(buffer[:count])
+	if response != nil {
+		conn.Write(append([]byte{statusCode}, response...))
+	} else {
+		conn.Write([]byte{statusCode})
 	}
 }
 
@@ -173,7 +171,7 @@ func AddTestUser() (string, error) {
 	t := make([]byte, 8)
 	binary.LittleEndian.PutUint64(t, rand.Uint64())
 	op := commands.CreateUserOp{
-		Token: t,
+		Token:    t,
 		TokenKey: tokenKey,
 	}
 	_, err := controlPanel.CreateUser(tokenKey, op.Serialize())

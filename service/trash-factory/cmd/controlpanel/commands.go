@@ -6,6 +6,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
+	"sort"
 	"trash-factory/pkg/commands"
 	"trash-factory/pkg/crypto"
 	"trash-factory/pkg/models"
@@ -16,6 +17,7 @@ type ControlPanel struct {
 	Commands map[byte]interface{}
 	DB       *DataBase
 	Cryptor  *crypto.Cryptor
+	stats    *models.Statistic
 }
 
 func NewControlPanel() *ControlPanel {
@@ -29,9 +31,15 @@ func NewControlPanel() *ControlPanel {
 		commands.CreateUser:       cp.CreateUser,
 		commands.GetUser:          cp.GetUser,
 		commands.ListUsers:        cp.ListUsers,
+		commands.GetStatistic:     cp.GetStatistic,
 	}
 	cp.DB = NewDataBase()
 	cp.Cryptor = crypto.NewCryptor(magic)
+	statistic, err := cp.CalculateStatistic()
+	if err != nil {
+		panic(err)
+	}
+	cp.stats = statistic
 	return &cp
 }
 
@@ -117,7 +125,12 @@ func (cp *ControlPanel) ListUsers(tokenKey string, opBytes []byte) ([]byte, erro
 }
 
 func (cp *ControlPanel) GetUser(tokenKey string, opBytes []byte) ([]byte, error) {
-	user, err := cp.DB.GetUser(tokenKey)
+	op, err := commands.DeserializeGetUserOp(opBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := cp.DB.GetUser(op.TokenKey)
 	if err != nil {
 		return nil, err
 	}
@@ -162,6 +175,8 @@ func (cp *ControlPanel) GetItem(tokenKey string, opBytes []byte) ([]byte, error)
 
 func (cp *ControlPanel) PutItem(tokenKey string, opBytes []byte) ([]byte, error) {
 	op, err := commands.DeserializePutItemOpOp(opBytes)
+
+	cp.stats.AddItem(tokenKey, op.Item)
 
 	user, err := cp.DB.GetUser(tokenKey)
 	if err != nil {
@@ -240,6 +255,54 @@ func (cp *ControlPanel) CreateContainer(tokenKey string, opBytes []byte) ([]byte
 		Description: op.Description,
 	}
 	return nil, cp.DB.SaveContainer(tokenKey, &container)
+}
+
+func (cp ControlPanel) GetStatistic(tokenKey string, opBytes []byte) ([]byte, error) {
+	op, err := commands.DeserializeGetStatisticOp(opBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	userStats := make([]models.UserStatistic, 0, len(cp.stats.Users))
+
+	for _, userStatistic := range cp.stats.Users {
+		userStats = append(userStats, userStatistic)
+	}
+
+	sort.Slice(userStats, func(i, j int) bool {
+		return userStats[i].Total < userStats[j].Total
+	})
+
+	return models.Statistic{
+		Users: userStats[op.Skip:op.Take],
+	}.Serialize(), nil
+}
+
+func (cp ControlPanel) CalculateStatistic() (*models.Statistic, error) {
+	stats := models.NewStatistic()
+	users, err := cp.DB.GetAllUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, userToken := range *users {
+		user, err := cp.DB.GetUser(userToken)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, containerId := range user.ContainersIds {
+			container, err := cp.DB.GetContainer(containerId)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, item := range container.Items {
+				stats.AddItem(userToken, item)
+			}
+		}
+	}
+	return stats, nil
 }
 
 //TODO: move somewhere else
