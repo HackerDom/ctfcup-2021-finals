@@ -177,3 +177,24 @@ func (client *Client) getUser(tokenKey string) (*models.User, error) {
 	}
 	return &user, nil
 }
+
+func (client *Client) getStat(skip, take int) (*models.Statistic, error) {
+	msg := []byte{commands.GetStatistic}
+	getStatisticOp := commands.GetStatisticOp{
+		Skip: skip,
+		Take: take,
+	}
+	msg = append(msg, getStatisticOp.Serialize()...)
+	response, err := client.sendMessage(msg)
+	if err != nil {
+		return nil, err
+	}
+	if response.statusCode != '\x00' {
+		return nil, errors.New(fmt.Sprintf("cant get statistic: %02x", response.statusCode))
+	}
+	statistic, err := models.DeserializeStatistic(response.decryptedPayload)
+	if err != nil {
+		return nil, err
+	}
+	return &statistic, nil
+}

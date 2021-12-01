@@ -77,7 +77,7 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 	indexTmpl.Execute(w, user)
 }
 
-func main() {
+func main1() {
 	port, exist := os.LookupEnv("PORT")
 	if !exist {
 		log.Fatal("PORT not found")
@@ -92,7 +92,7 @@ func main() {
 	}
 }
 
-func main1() {
+func main() {
 	tokenKey, err := client.createUser()
 	if err != nil {
 		log.Fatal(err)
@@ -104,4 +104,12 @@ func main1() {
 		log.Fatal(err)
 	}
 	log.Info(user)
+
+	stat, err := client.getStat(0, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for i, user := range stat.Users {
+		log.Infof("#%d   %x -- %d", i, user.TokenKey, user.Total)
+	}
 }
