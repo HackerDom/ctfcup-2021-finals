@@ -257,7 +257,7 @@ func (cp *ControlPanel) CreateContainer(tokenKey string, opBytes []byte) ([]byte
 	return nil, cp.DB.SaveContainer(tokenKey, &container)
 }
 
-func (cp ControlPanel) GetStatistic(tokenKey string, opBytes []byte) ([]byte, error) {
+func (cp *ControlPanel) GetStatistic(tokenKey string, opBytes []byte) ([]byte, error) {
 	op, err := commands.DeserializeGetStatisticOp(opBytes)
 	if err != nil {
 		return nil, err
