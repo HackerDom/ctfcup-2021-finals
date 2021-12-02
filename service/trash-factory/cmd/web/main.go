@@ -8,12 +8,14 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
 var (
 	sessionsStorage = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
-	client   = NewClient("127.0.0.1:9090", "4d65822107fcfd52", "4f163f5f0f9a6278")
+	client          = NewClient("127.0.0.1:9090", "4d65822107fcfd52", "4f163f5f0f9a6278")
+	pageSize        = 20
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +80,42 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func statHandler(w http.ResponseWriter, r *http.Request) {
+	pageN := 0
+	if pageNParam, ok := r.URL.Query()["page"]; ok && len(pageNParam) > 0 {
+		pageNParsed, err := strconv.Atoi(pageNParam[0])
+		if err == nil && pageNParsed > 0 {
+			pageN = pageNParsed - 1
+		}
+	}
 
+	stat, err := client.getStat(pageN*pageSize, (pageN+1)*pageSize)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+
+	funcMap := template.FuncMap{
+		"inc": func(i int) int {
+			return i +1
+		},
+		"getPlace": func(i int) int {
+			return pageN * pageSize + i + 1
+		},
+	}
+
+	indexTmpl, err := template.New("stat.html").Funcs(funcMap).ParseFiles("templates/stat.html")
+	if err != nil {
+		log.Error("Can't read stat.html")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := indexTmpl.Execute(w, stat.Users); err != nil {
+		log.Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func main() {
@@ -89,7 +126,7 @@ func main() {
 
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/new", newHandler)
-	http.HandleFunc("/stat", newHandler)
+	http.HandleFunc("/stat", statHandler)
 	rand.Seed(time.Now().Unix())
 	fmt.Printf("Starting server at port :%s\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
@@ -110,11 +147,4 @@ func main1() {
 	}
 	log.Info(user)
 
-	stat, err := client.getStat(0, 1)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for i, user := range stat.Users {
-		log.Infof("#%d   %x -- %d", i, user.TokenKey, user.Total)
-	}
 }

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      background-color: black;
+      font-size: large;
+      color: #0f0;
+    }
+    .main-container {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%) translateY(-40%);
+      top: 20%;
+      font-size: 1vw;
+      font-family: Dejavu Sans Mono, monospace;
+    }
+    .token-form {
+      text-align: center;
+      border: 1px solid #0f0;
+      padding: 5%;
+    }
+    pre {
+      display: inline;
+      word-wrap: break-word;
+    }
+    .green-btn {
+      border: 1px solid #0f0;
+      color: #0f0;
+      background-color: rgba(0,0,0,0);
+      font-size: 1vw;
+      margin: 5%;
+      padding: 3% 5%;
+      display: block;
+      text-decoration: none;
+    }
+    .green-btn:focus {
+      color: black;
+      background-color: #0f0;
+      border-color: black;
+    }
+    .green-btn:hover {
+      color: black;
+      background-color: #0f0;
+      border-color: black;
+    }
+    .scoreboard {
+        margin: 5%;
+        display: table;
+        width: auto;
+    }
+    .scoreboard-line {
+        display: table-row;
+        width: auto;
+        clear: both;
+    }
+    .place,
+    .user,
+    .user-score {
+        display: table-cell;
+        width: 30%;
+    }
+
+  </style>
+</head>
+<body>
+<div class="main-container">
+    <pre>
+  _____              _       _____          _
+ |_   _| __ __ _ ___| |__   |  ___|_ _  ___| |_ ___  _ __ _   _
+   | || '__/ _` / __| '_ \  | |_ / _` |/ __| __/ _ \| '__| | | |
+   | || | | (_| \__ \ | | | |  _| (_| | (__| || (_) | |  | |_| |
+   |_||_|  \__,_|___/_| |_| |_|  \__,_|\___|\__\___/|_|   \__, |
+                                                          |___/
+    </pre>
+  <div class="token-form">
+    SCOREBOARD
+    <div class="scoreboard">
+        <div class="scoreboard-line">
+            <div class="place">#</div>
+            <div class="user">TokenKey</div>
+            <div class="user-score">TotalWeight</div>
+        </div>
+        {{ range $i, $userStat := . }}
+        <div class="scoreboard-line">
+            <div class="place">{{ getPlace $i }}</div>
+            <div class="user">{{ $userStat.TokenKey }}</div>
+            <div class="user-score">{{ $userStat.Total }}</div>
+        </div>
+        {{ end }}
+    </div>
+  </div>
+</div>
+</body>
+</html>
