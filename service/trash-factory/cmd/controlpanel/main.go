@@ -81,21 +81,25 @@ func main() {
 }
 
 func GenerateTestData() error {
-	tokenKey, err := AddTestUser()
-	if err != nil {
-		return err
-	}
-	err = AddTestContainer(tokenKey)
-	if err != nil {
-		return err
-	}
-	err = AddTestContainer(tokenKey)
-	if err != nil {
-		return err
-	}
-	err = PutItem(tokenKey)
-	if err != nil {
-		return err
+	for i := 0; i < 3; i++ {
+		tokenKey, err := AddTestUser()
+		if err != nil {
+			return err
+		}
+		err = AddTestContainer(tokenKey)
+		if err != nil {
+			return err
+		}
+		err = AddTestContainer(tokenKey)
+		if err != nil {
+			return err
+		}
+		for j := 0; j < i+1; j++ {
+			err = PutItem(tokenKey)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

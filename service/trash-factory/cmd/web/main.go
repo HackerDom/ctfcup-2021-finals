@@ -13,7 +13,7 @@ import (
 
 var (
 	sessionsStorage = sessions.NewCookieStore([]byte("asdasdasdw"))
-	client   = NewClient("127.0.0.1:9090", "4d65822107fcfd52", "4f163f5f0f9a6278")
+	client          = NewClient("127.0.0.1:9090", "4d65822107fcfd52", "4f163f5f0f9a6278")
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -110,6 +110,6 @@ func main() {
 		log.Fatal(err)
 	}
 	for i, user := range stat.Users {
-		log.Infof("#%d   %x -- %d", i, user.TokenKey, user.Total)
+		log.Infof("Stats #%d   %x -- %d", i, user.TokenKey, user.Total)
 	}
 }
