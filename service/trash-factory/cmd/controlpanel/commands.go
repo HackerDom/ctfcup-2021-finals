@@ -271,7 +271,7 @@ func (cp *ControlPanel) GetStatistic(tokenKey string, opBytes []byte) ([]byte, e
 	}
 
 	sort.Slice(userStats, func(i, j int) bool {
-		return userStats[i].Total < userStats[j].Total
+		return userStats[i].Total > userStats[j].Total
 	})
 
 	if op.Skip >= len(userStats) {
@@ -314,7 +314,6 @@ func (cp ControlPanel) CalculateStatistic() (*models.Statistic, error) {
 	return stats, nil
 }
 
-//TODO: move somewhere else
 func Contains(ids []string, target string) bool {
 	contains := false
 	for _, id := range ids {
