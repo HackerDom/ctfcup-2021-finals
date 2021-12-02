@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	sessionsStorage = sessions.NewCookieStore([]byte("asdasdasdw"))
+	sessionsStorage = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 	client   = NewClient("127.0.0.1:9090", "4d65822107fcfd52", "4f163f5f0f9a6278")
 )
 
@@ -77,7 +77,11 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 	indexTmpl.Execute(w, user)
 }
 
-func main1() {
+func statHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func main() {
 	port, exist := os.LookupEnv("PORT")
 	if !exist {
 		log.Fatal("PORT not found")
@@ -85,6 +89,7 @@ func main1() {
 
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/new", newHandler)
+	http.HandleFunc("/stat", newHandler)
 	rand.Seed(time.Now().Unix())
 	fmt.Printf("Starting server at port :%s\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
@@ -92,7 +97,7 @@ func main1() {
 	}
 }
 
-func main() {
+func main1() {
 	tokenKey, err := client.createUser()
 	if err != nil {
 		log.Fatal(err)
