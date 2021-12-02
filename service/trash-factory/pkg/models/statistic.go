@@ -9,31 +9,35 @@ type UserStatistic struct {
 }
 
 type Statistic struct {
-	byUsers map[string]UserStatistic
-	Users   []UserStatistic
+	byUsers map[string]*UserStatistic
+	Users   []*UserStatistic
 }
 
 func NewStatistic() *Statistic {
 	return &Statistic{
-		Users:   []UserStatistic{},
-		byUsers: map[string]UserStatistic{},
+		Users:   []*UserStatistic{},
+		byUsers: map[string]*UserStatistic{},
 	}
 }
 
-func (stats Statistic) AddItem(tokenKey string, item Item) {
-	var userStats UserStatistic
-	if _, ok := stats.byUsers[tokenKey]; !ok {
-		userStats = UserStatistic{
+func (stats *Statistic) AddItem(tokenKey string, item Item) {
+	byUsers := stats.byUsers
+	if _, ok := byUsers[tokenKey]; !ok {
+		newUser := &UserStatistic{
 			TokenKey: tokenKey,
 			ByType:   map[uint8]uint8{},
 			Total:    0,
 		}
+		byUsers[tokenKey] = newUser
+		users := stats.Users
+		stats.Users = append(users, newUser)
 	}
+	userStats := byUsers[tokenKey]
 	userStats.Total += int(item.Weight)
 	userStats.ByType[item.Type] += item.Weight
 }
 
-func (stats Statistic) Serialize() []byte {
+func (stats *Statistic) Serialize() []byte {
 	writer := serializeb.NewWriter()
 	stats.SerializeNext(&writer)
 	return writer.GetBytes()
@@ -59,7 +63,7 @@ func DeserializeStatistic(buf []byte) (Statistic, error) {
 
 func DeserializeNextStatistic(reader serializeb.Reader) (Statistic, error) {
 	userCount, err := reader.ReadArraySize()
-	stats := make([]UserStatistic, userCount)
+	stats := make([]*UserStatistic, 0)
 	if err != nil {
 		return Statistic{}, err
 	}
@@ -78,7 +82,7 @@ func DeserializeNextStatistic(reader serializeb.Reader) (Statistic, error) {
 		if err != nil {
 			return Statistic{}, err
 		}
-		userStats := UserStatistic{
+		userStats := &UserStatistic{
 			Total:    totalWeight,
 			TokenKey: tokenKey,
 			ByType:   map[uint8]uint8{},

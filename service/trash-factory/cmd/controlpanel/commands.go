@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"math"
 	"math/rand"
 	"sort"
 	"trash-factory/pkg/commands"
@@ -263,7 +264,7 @@ func (cp *ControlPanel) GetStatistic(tokenKey string, opBytes []byte) ([]byte, e
 		return nil, err
 	}
 
-	userStats := make([]models.UserStatistic, 0, len(cp.stats.Users))
+	userStats := make([]*models.UserStatistic, 0, len(cp.stats.Users))
 
 	for _, userStatistic := range cp.stats.Users {
 		userStats = append(userStats, userStatistic)
@@ -273,9 +274,17 @@ func (cp *ControlPanel) GetStatistic(tokenKey string, opBytes []byte) ([]byte, e
 		return userStats[i].Total < userStats[j].Total
 	})
 
-	return models.Statistic{
-		Users: userStats[op.Skip:op.Take],
-	}.Serialize(), nil
+	if op.Skip >= len(userStats) {
+		statistic := models.NewStatistic()
+		return statistic.Serialize(), nil
+	}
+
+	maxTake := int(math.Min(float64(len(userStats)-op.Skip), float64(op.Take)))
+
+	statistic := models.Statistic{
+		Users: userStats[op.Skip : op.Skip+maxTake],
+	}
+	return statistic.Serialize(), nil
 }
 
 func (cp ControlPanel) CalculateStatistic() (*models.Statistic, error) {
