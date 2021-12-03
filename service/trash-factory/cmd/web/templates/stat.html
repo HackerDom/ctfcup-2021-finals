@@ -46,18 +46,22 @@
     }
     .scoreboard {
         margin: 5%;
-        display: table;
         width: auto;
     }
     .scoreboard-line {
-        display: table-row;
+        display: block;
         width: auto;
         clear: both;
+        padding: 1.5%;
+    }
+    .scoreboard-line:hover {
+        color: black;
+        background-color: lime;
     }
     .place,
     .user,
     .user-score {
-        display: table-cell;
+        display: inline-block;
         width: 30%;
     }
     .scoreboard-btn-group {
@@ -82,7 +86,7 @@
                                                           |___/
     </pre>
   <div class="token-form">
-    SCOREBOARD
+    STATISTICS
     <div class="scoreboard">
         <div class="scoreboard-line">
             <div class="place">#</div>
