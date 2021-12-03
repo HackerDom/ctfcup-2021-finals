@@ -15,7 +15,7 @@ RUN go build -o web ./cmd/web
 
 FROM scratch
 
-COPY --from=build /app/cmd/web/templates ./templates
+#COPY --from=build /app/cmd/web/templates ./templates
 COPY --from=build /app/web .
 
 ENTRYPOINT ["./web"]

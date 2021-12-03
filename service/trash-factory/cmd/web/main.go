@@ -25,25 +25,31 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	session, err := sessionsStorage.Get(r, "session")
 	if err != nil {
-		http.Error(w, "", http.StatusInternalServerError)
+		log.Error(err)
+		http.Error(w, "session error", http.StatusInternalServerError)
 		return
 	}
 
 	if err = session.Save(r, w); err != nil {
-		http.Error(w, "", http.StatusInternalServerError)
+		log.Error(err)
+		http.Error(w, "session error", http.StatusInternalServerError)
 		return
 	}
 
 	indexTmpl, err := template.ParseFiles("templates/index.html")
 	if err != nil {
 		log.Error(err)
+		http.Error(w, "parse template error", http.StatusInternalServerError)
 		return
 	}
-	indexTmpl.Execute(w, nil)
+	if err := indexTmpl.Execute(w, nil); err != nil {
+		log.Error(err)
+		http.Error(w, "rendering error", http.StatusInternalServerError)
+	}
 
 }
 
-func newHandler(w http.ResponseWriter, r *http.Request) {
+func tokenHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "Bad request", http.StatusMethodNotAllowed)
 		return
@@ -51,7 +57,9 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 
 	session, err := sessionsStorage.Get(r, "session")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Error(err)
+		http.Error(w, "session error", http.StatusInternalServerError)
+		return
 	}
 	if session == nil || session.IsNew {
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
@@ -62,30 +70,34 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 	if !found {
 		tokenKey, err = client.createUser()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadGateway)
+			log.Error(err)
+			http.Error(w, "cant create user", http.StatusBadGateway)
 			return
 		}
 		session.Values["tokenKey"] = tokenKey
 		if err = session.Save(r, w); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Error(err)
+			http.Error(w, "session error", http.StatusInternalServerError)
 			return
 		}
 	}
 
 	user, err := client.getUser(tokenKey.(string))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		log.Error(err)
+		http.Error(w, "cant get user", http.StatusBadGateway)
 		return
 	}
 
 	indexTmpl, err := template.ParseFiles("templates/new.html")
 	if err != nil {
 		log.Error(err)
+		http.Error(w, "parse template error", http.StatusInternalServerError)
 		return
 	}
 	if err := indexTmpl.Execute(w, user); err != nil {
 		log.Error(err)
-		return
+		http.Error(w, "rendering error", http.StatusInternalServerError)
 	}
 }
 
@@ -100,29 +112,34 @@ func statHandler(w http.ResponseWriter, r *http.Request) {
 
 	stat, err := client.getStat(pageN*pageSize, (pageN+1)*pageSize)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		log.Error(err)
+		http.Error(w, "cant get stat", http.StatusBadGateway)
 		return
 	}
 
-
 	funcMap := template.FuncMap{
 		"inc": func(i int) int {
-			return i +1
+			return i + 1
 		},
 		"getPlace": func(i int) int {
-			return pageN * pageSize + i + 1
+			return pageN*pageSize + i + 1
 		},
 	}
 
 	indexTmpl, err := template.New("stat.html").Funcs(funcMap).ParseFiles("templates/stat.html")
 	if err != nil {
 		log.Error(err)
+		http.Error(w, "parse template error", http.StatusInternalServerError)
 		return
 	}
 
-	if err := indexTmpl.Execute(w, stat.Users); err != nil {
+	if err := indexTmpl.Execute(w, map[string]interface{}{
+		"stat":      stat.Users,
+		"prevPageN": pageN,
+		"nextPageN": pageN + 2,
+	}); err != nil {
 		log.Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "rendering error", http.StatusInternalServerError)
 		return
 	}
 }
@@ -134,7 +151,7 @@ func main() {
 	}
 
 	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/new", newHandler)
+	http.HandleFunc("/token", tokenHandler)
 	http.HandleFunc("/stat", statHandler)
 	rand.Seed(time.Now().Unix())
 	fmt.Printf("Starting server at port :%s\n", port)

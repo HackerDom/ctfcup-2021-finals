@@ -2,7 +2,21 @@
 <html>
 <head>
     <meta charset="UTF-8" />
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script>
+        window.onload = function () {
+            let sec = 10
+            setInterval(() => {
+                sec -= 1
+                let btn = document.getElementById("home-btn");
+                btn.text = `HOME (${sec} SEC)`
+                if (sec < 1) {
+                    window.location.href = "/"
+                }
+            }, 1000)
+        }
+    </script>
     <style>
         body {
             background-color: black;
@@ -36,6 +50,26 @@
             display: inline-block;
             vertical-align: middle;
         }
+        .green-btn {
+            border: 1px solid #0f0;
+            color: #0f0;
+            background-color: rgba(0,0,0,0);
+            font-size: 1vw;
+            margin: 5%;
+            padding: 3% 5%;
+            display: block;
+            text-decoration: none;
+        }
+        .green-btn:focus {
+            color: black;
+            background-color: #0f0;
+            border-color: black;
+        }
+        .green-btn:hover {
+            color: black;
+            background-color: #0f0;
+            border-color: black;
+        }
     </style>
 </head>
 <body>
@@ -56,6 +90,7 @@
             TOKEN KEY: {{ .TokenKey }}
             <br/>
             TOKEN: {{ .Token | printf "%x" }}
+            <a href="/" id="home-btn" class="green-btn">HOME (10 SEC)</a>
         </div>
     </div>
 </div>

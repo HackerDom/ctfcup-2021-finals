@@ -10,6 +10,8 @@ services:
     environment:
       - PORT=8080
       - CP_ADDR=controlpanel:9090
+    volumes:
+    - ./cmd/web/templates:/templates
     restart: always
     depends_on:
       - controlpanel
