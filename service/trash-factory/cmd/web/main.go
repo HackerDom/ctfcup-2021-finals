@@ -50,12 +50,19 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	session, err := sessionsStorage.Get(r, "session")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+	if session == nil || session.IsNew {
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
 
 	tokenKey, found := session.Values["tokenKey"]
 	if !found {
 		tokenKey, err = client.createUser()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
 		session.Values["tokenKey"] = tokenKey
@@ -67,7 +74,7 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := client.getUser(tokenKey.(string))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 
@@ -76,7 +83,10 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 		return
 	}
-	indexTmpl.Execute(w, user)
+	if err := indexTmpl.Execute(w, user); err != nil {
+		log.Error(err)
+		return
+	}
 }
 
 func statHandler(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +100,7 @@ func statHandler(w http.ResponseWriter, r *http.Request) {
 
 	stat, err := client.getStat(pageN*pageSize, (pageN+1)*pageSize)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 
