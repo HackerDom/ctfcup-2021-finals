@@ -14,7 +14,7 @@ import (
 
 var (
 	sessionsStorage = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
-	client          = NewClient("127.0.0.1:9090", "4d65822107fcfd52", "4f163f5f0f9a6278")
+	client          = NewClient(os.Getenv("CP_ADDR"), "4d65822107fcfd52", "4f163f5f0f9a6278")
 	pageSize        = 20
 )
 
@@ -36,7 +36,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	indexTmpl, err := template.ParseFiles("templates/index.html")
 	if err != nil {
-		log.Error("Can't read index.html")
+		log.Error(err)
 		return
 	}
 	indexTmpl.Execute(w, nil)
@@ -73,7 +73,7 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 
 	indexTmpl, err := template.ParseFiles("templates/new.html")
 	if err != nil {
-		log.Error("Can't read new.html")
+		log.Error(err)
 		return
 	}
 	indexTmpl.Execute(w, user)
@@ -106,8 +106,7 @@ func statHandler(w http.ResponseWriter, r *http.Request) {
 
 	indexTmpl, err := template.New("stat.html").Funcs(funcMap).ParseFiles("templates/stat.html")
 	if err != nil {
-		log.Error("Can't read stat.html")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
 		return
 	}
 
