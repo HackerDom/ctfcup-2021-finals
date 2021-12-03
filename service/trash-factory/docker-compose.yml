@@ -24,11 +24,8 @@ services:
       - "9090:9090"
     environment:
       - PORT=9090
-    #volumes:
-    #  - data:/app/db
+    volumes:
+      - ./data:/db
     restart: always
     mem_limit: 1G
     pids_limit: 10
-
-#volumes:
-#  data:
