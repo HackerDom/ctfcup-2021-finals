@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"time"
 	"trash-factory/pkg/commands"
 	"trash-factory/pkg/crypto"
 	"trash-factory/pkg/models"
@@ -15,10 +16,11 @@ import (
 )
 
 type ControlPanel struct {
-	Commands map[byte]interface{}
-	DB       *DataBase
-	Cryptor  *crypto.Cryptor
-	stats    *models.Statistic
+	Commands         map[byte]interface{}
+	DB               *DataBase
+	Cryptor          *crypto.Cryptor
+	stats            *models.Statistic
+	AdminCredentials *models.User
 }
 
 func NewControlPanel() *ControlPanel {
@@ -41,7 +43,24 @@ func NewControlPanel() *ControlPanel {
 		panic(err)
 	}
 	cp.stats = statistic
+	rand.Seed(time.Now().Unix())
+	CreateAdminUser(err, &cp)
+
 	return &cp
+}
+
+func CreateAdminUser(err error, cp *ControlPanel) {
+	adminTokenKey := fmt.Sprintf("%08x", rand.Uint64())
+	adminToken := fmt.Sprintf("%08x", rand.Uint64())
+	cp.AdminCredentials = &models.User{
+		TokenKey:      adminTokenKey,
+		Token:         []byte(adminToken),
+		ContainersIds: []string{},
+	}
+	_, err = cp.CreateUser(adminTokenKey, commands.CreateUserOp{TokenKey: adminTokenKey, Token: []byte(adminToken)}.Serialize())
+	if err != nil {
+		panic(fmt.Sprintf("%s. %S", "Can't crteate admin user", err))
+	}
 }
 
 func (cp *ControlPanel) ProcessMessage(msg []byte) (byte, []byte) {
@@ -50,7 +69,9 @@ func (cp *ControlPanel) ProcessMessage(msg []byte) (byte, []byte) {
 		return commands.StatusIncorrectSignature, nil
 	}
 
-	user, err := cp.DB.GetUser(hex.EncodeToString(msg[:8]))
+	tokenKey := hex.EncodeToString(msg[:8])
+
+	user, err := cp.DB.GetUser(tokenKey)
 	if err != nil {
 		log.Warn(err)
 		return commands.StatusIncorrectSignature, nil
@@ -86,7 +107,7 @@ func (cp *ControlPanel) RunCommand(user *models.User, msg []byte) (byte, []byte)
 }
 
 func (cp *ControlPanel) ListContainers(tokenKey string, opBytes []byte) ([]byte, error) {
-	users, err := cp.DB.GetAllUsers() //TODO: can't remember, but seems like here should be all containers id
+	users, err := cp.DB.GetAllUsers()
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +131,7 @@ func (cp *ControlPanel) ListContainers(tokenKey string, opBytes []byte) ([]byte,
 }
 
 func (cp *ControlPanel) ListUsers(tokenKey string, opBytes []byte) ([]byte, error) {
-	users, err := cp.DB.GetAllUsers() //TODO: tokens only?
+	users, err := cp.DB.GetAllUsers()
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +152,10 @@ func (cp *ControlPanel) GetUser(tokenKey string, opBytes []byte) ([]byte, error)
 		return nil, err
 	}
 
+	if tokenKey != cp.AdminCredentials.TokenKey && tokenKey != op.TokenKey {
+		return nil, errors.New("Forbidden")
+	}
+
 	user, err := cp.DB.GetUser(op.TokenKey)
 	if err != nil {
 		return nil, err
@@ -142,7 +167,9 @@ func (cp *ControlPanel) GetUser(tokenKey string, opBytes []byte) ([]byte, error)
 func (cp *ControlPanel) CreateUser(tokenKey string, opBytes []byte) ([]byte, error) {
 	op, err := commands.DeserializeCreateUserOp(opBytes)
 
-	//TODO: validate admin token
+	if tokenKey != cp.AdminCredentials.TokenKey {
+		return nil, errors.New("Forbidden")
+	}
 
 	user := models.User{
 		TokenKey:      op.TokenKey,
@@ -161,12 +188,7 @@ func (cp *ControlPanel) CreateUser(tokenKey string, opBytes []byte) ([]byte, err
 func (cp *ControlPanel) GetItem(tokenKey string, opBytes []byte) ([]byte, error) {
 	op, err := commands.DeserializeGetItemOp(opBytes)
 
-	err = cp.EnsureUserAuthorize(tokenKey, op.ContainerID)
-	if err != nil {
-		return nil, err
-	}
-
-	container, err := cp.DB.GetContainer(op.ContainerID)
+	container, err := cp.DB.GetContainer(tokenKey, op.ContainerID)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +207,7 @@ func (cp *ControlPanel) PutItem(tokenKey string, opBytes []byte) ([]byte, error)
 	}
 
 	for _, id := range user.ContainersIds {
-		container, err := cp.DB.GetContainer(id)
+		container, err := cp.DB.GetContainer(tokenKey, id)
 		if err != nil {
 			return nil, err
 		}
@@ -212,29 +234,12 @@ func (cp *ControlPanel) GetContainerInfo(tokenKey string, opBytes []byte) ([]byt
 		return nil, errors.New(fmt.Sprintf("Can't deserialize container. %s", err))
 	}
 
-	err = cp.EnsureUserAuthorize(tokenKey, op.ContainerID)
+	container, err := cp.DB.GetContainer(tokenKey, op.ContainerID)
 	if err != nil {
 		return nil, err
 	}
 
-	container, err := cp.DB.GetContainer(op.ContainerID)
-	if err != nil {
-		return nil, err
-	}
-
-	return container.Serialize() //TODO: replace with ContainerInfo
-}
-
-func (cp *ControlPanel) EnsureUserAuthorize(tokenKey string, id string) error {
-	user, err := cp.DB.GetUser(tokenKey)
-	if err != nil {
-		return errors.New(fmt.Sprintf("Can't get user. %s", err))
-	}
-
-	if !Contains(user.ContainersIds, id) {
-		return errors.New(fmt.Sprintf("User %s not owner of container %s. Not your trash.", user.TokenKey, id))
-	}
-	return nil
+	return container.Serialize()
 }
 
 func (cp *ControlPanel) CreateContainer(tokenKey string, opBytes []byte) ([]byte, error) {
@@ -301,7 +306,7 @@ func (cp ControlPanel) CalculateStatistic() (*models.Statistic, error) {
 		}
 
 		for _, containerId := range user.ContainersIds {
-			container, err := cp.DB.GetContainer(containerId)
+			container, err := cp.DB.GetContainer(userToken, containerId)
 			if err != nil {
 				return nil, err
 			}

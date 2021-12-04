@@ -58,7 +58,13 @@ func (db *DataBase) SaveContainer(tokenKey string, container *models.Container) 
 		return err
 	}
 
-	if err := os.WriteFile(db.containerDBPath+container.ID, data, 0666); err != nil {
+	userFolder := db.containerDBPath + tokenKey + "/"
+	err = os.MkdirAll(userFolder, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(userFolder+container.ID, data, 0666); err != nil {
 		return err
 	}
 
@@ -70,8 +76,9 @@ func (db *DataBase) SaveContainer(tokenKey string, container *models.Container) 
 	return db.SaveUser(user)
 }
 
-func (db *DataBase) GetContainer(containerId string) (*models.Container, error) {
-	containerInfo, err := os.ReadFile(db.containerDBPath + containerId)
+func (db *DataBase) GetContainer(tokenKey string, containerId string) (*models.Container, error) {
+	userFolder := db.containerDBPath + tokenKey + "/"
+	containerInfo, err := os.ReadFile(userFolder + containerId)
 	if err != nil {
 		return nil, errors.New("container not found")
 	}

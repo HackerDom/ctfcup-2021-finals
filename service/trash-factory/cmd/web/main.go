@@ -14,7 +14,7 @@ import (
 
 var (
 	sessionsStorage = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
-	client          = NewClient(os.Getenv("CP_ADDR"), "4d65822107fcfd52", "4f163f5f0f9a6278")
+	client          = NewClient(os.Getenv("CP_ADDR"), "", "")
 	pageSize        = 20
 )
 
@@ -42,6 +42,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "parse template error", http.StatusInternalServerError)
 		return
 	}
+	indexTmpl.Execute(w, nil)
 	if err := indexTmpl.Execute(w, nil); err != nil {
 		log.Error(err)
 		http.Error(w, "rendering error", http.StatusInternalServerError)
@@ -172,5 +173,4 @@ func main1() {
 		log.Fatal(err)
 	}
 	log.Info(user)
-
 }

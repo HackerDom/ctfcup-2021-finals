@@ -83,6 +83,22 @@ func (client *Client) sendMessage(msg []byte) (*Response, error) {
 		return nil, err
 	}
 
+	adminUserBytes, err := client.readBytesOnce(conn)
+	if err != nil {
+		return nil, err
+	}
+	adminUser, err := models.DeserializeUser(adminUserBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	client.tokenKey = adminUser.TokenKey
+	client.token = adminUser.Token
+	client.tokenKeyBytes, err = hex.DecodeString(adminUser.TokenKey)
+	if err != nil {
+		return nil, err
+	}
+
 	cryptor := crypto.NewCryptor(magic)
 	ct, err := cryptor.EncryptMsg(client.tokenKey, client.token, msg)
 	if err != nil {

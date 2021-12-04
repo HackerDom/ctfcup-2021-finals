@@ -10,6 +10,7 @@ const (
 	GetUser          = '\x07'
 	ListUsers        = '\x08'
 	GetStatistic     = '\x09'
+	GetAdminToken    = '\x10'
 )
 
 const (
@@ -19,4 +20,10 @@ const (
 	StatusCommandExecError   = '\x03'
 	StatusCommandNotFound    = '\x04'
 	StatusInternalError      = '\xff'
+)
+
+const (
+	FrontUrl    = "localhost"
+	BackendUrl  = "localhost"
+	BackendPort = "9090"
 )

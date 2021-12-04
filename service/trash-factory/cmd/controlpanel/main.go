@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"strings"
 	"trash-factory/pkg/commands"
 	"trash-factory/pkg/models"
 )
@@ -23,6 +24,19 @@ func handleConn(conn net.Conn) {
 	if err != nil {
 		log.Error(err)
 		return
+	}
+
+	addr, err := net.LookupHost(commands.FrontUrl)
+	if err != nil {
+		panic(fmt.Sprintf("%s. %s", "Can't resolve backend url", err.Error()))
+	}
+	remoteAddr := strings.Split(conn.RemoteAddr().String(), ":")[0]
+	if addr[0] == remoteAddr {
+		write, err := conn.Write(controlPanel.AdminCredentials.Serialize())
+		if err != nil {
+			log.Error(write)
+			return
+		}
 	}
 
 	buffer := make([]byte, 128)
@@ -178,13 +192,13 @@ func AddTestUser() (string, error) {
 		Token:    t,
 		TokenKey: tokenKey,
 	}
-	_, err := controlPanel.CreateUser(tokenKey, op.Serialize())
+	_, err := controlPanel.CreateUser(controlPanel.AdminCredentials.TokenKey, op.Serialize())
 	if err != nil {
 		log.Error(err)
 		return "", err
 	}
 
-	user, err := controlPanel.GetUser(tokenKey, commands.GetUserOp{
+	user, err := controlPanel.GetUser(controlPanel.AdminCredentials.TokenKey, commands.GetUserOp{
 		TokenKey: tokenKey,
 	}.Serialize())
 	if err != nil {
