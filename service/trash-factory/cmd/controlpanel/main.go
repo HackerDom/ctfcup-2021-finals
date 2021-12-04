@@ -26,7 +26,7 @@ func handleConn(conn net.Conn) {
 		return
 	}
 
-	addr, err := net.LookupHost(commands.FrontUrl)
+	addr, err := net.LookupHost(os.Getenv("WEB_ADDR"))
 	if err != nil {
 		panic(fmt.Sprintf("%s. %s", "Can't resolve backend url", err.Error()))
 	}

@@ -26,6 +26,7 @@ services:
       - "9090:9090"
     environment:
       - PORT=9090
+      - WEB_ADDR=web
     volumes:
       - ./data:/db
     restart: always

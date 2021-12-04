@@ -21,9 +21,3 @@ const (
 	StatusCommandNotFound    = '\x04'
 	StatusInternalError      = '\xff'
 )
-
-const (
-	FrontUrl    = "localhost"
-	BackendUrl  = "localhost"
-	BackendPort = "9090"
-)
