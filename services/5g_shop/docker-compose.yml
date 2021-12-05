@@ -1,0 +1,53 @@
+version: "3"
+
+services:
+  postgres:
+    image: postgres:13.2-alpine
+    restart: always
+    env_file:
+      - variables.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  gateway:
+    restart: always
+    build:
+      context: .
+      dockerfile: ./docker/gateway/Dockerfile
+    tty: true
+    depends_on:
+      - shop
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+  shop:
+    container_name: shop
+    build: ./docker/back
+    restart: always
+    depends_on:
+      - postgres
+    links:
+      - "postgres:postgres"
+    env_file:
+      - variables.env
+    ulimits:
+      nofile:
+        soft: 26677
+        hard: 46677
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+
