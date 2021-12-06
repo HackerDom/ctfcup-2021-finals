@@ -2,6 +2,7 @@
 #define INTERNAL_PURCASESSERVICE_H
 
 #include <memory>
+#include <vector>
 
 #include "models/PGConnectionPool.h"
 #include "models/Purchase.h"
@@ -13,6 +14,8 @@ namespace shop {
         explicit PurchasesService(std::shared_ptr<PGConnectionPool> pgConnectionPool);
 
         JustResult Create(int buyerId, int wareId);
+
+        Result<std::vector<std::shared_ptr<Purchase>>> GetOfUser(int userId);
 
     private:
         std::shared_ptr<PGConnectionPool> pgConnectionPool;

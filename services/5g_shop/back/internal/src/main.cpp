@@ -289,6 +289,44 @@ response MakePurchase(::App &app, const request &req, UsersService &usersService
     return response(status::CREATED);
 }
 
+response GetPurchasesOfUser(::App &app, const request &req, UsersService &usersService, PurchasesService &purchasesService,
+                            int userId = -1) {
+    auto &ctx = app.get_context<CookieParser>(req);
+    auto authCookie = ctx.get_cookie(AuthCookieName);
+
+    if (authCookie.empty()) {
+        return response(status::UNAUTHORIZED);
+    }
+
+    auto userAuth = usersService.FindByAuthCookie(authCookie);
+
+    if (!userAuth.success) {
+        return response(status::UNAUTHORIZED);
+    }
+
+    auto purchases = purchasesService.GetOfUser(userId < 0 ? userAuth.value->id : userId);
+
+    if (!purchases.success) {
+        return response(status::INTERNAL_SERVER_ERROR);
+    }
+
+    std::vector<json::wvalue> jsoned;
+
+    for (const auto &purchase: purchases.value) {
+        json::wvalue data(
+                {
+                        {"id",      purchase->id},
+                        {"ware_id", purchase->wareId}
+                });
+
+        jsoned.push_back(data);
+    }
+
+    json::wvalue data({{"purchases", jsoned}});
+
+    return {status::OK, data};
+}
+
 int main(int argc, char **argv, char **env) {
     try {
         auto args = CommandLineParser::Parse(argc, argv);
@@ -354,6 +392,11 @@ int main(int argc, char **argv, char **env) {
         CROW_ROUTE(app, "/api/purchases").methods(crow::HTTPMethod::Post)(
                 [&app, &usersService, &purchasesService](const request &req) {
                     return MakePurchase(app, req, usersService, purchasesService);
+                });
+
+        CROW_ROUTE(app, "/api/purchases/my").methods(crow::HTTPMethod::Get)(
+                [&app, &usersService, &purchasesService](const request &req) {
+                    return GetPurchasesOfUser(app, req, usersService, purchasesService);
                 });
 
         app
