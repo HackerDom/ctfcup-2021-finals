@@ -9,7 +9,7 @@ stream {
     {%- for team_id in range(101, 101+10) %}
 
     {% set in_port = 2000 + team_id %}
-    {% set out_port = 4551 %}
+    {% set out_port = 9999 %}
 
     server {
         listen {{ in_port }};
