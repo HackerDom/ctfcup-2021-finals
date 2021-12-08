@@ -41,18 +41,7 @@ variable "serial_ssh_password_hash" {
 
 variable "services" {
   default = []
-  type = [
-    {
-      "name": "trash-factory",
-      "template": "setup_empty.sh",
-      "id": 1,
-    },
-    {
-      "name": "5g_shop",
-      "template": "setup_empty.sh",
-      "id": 2,
-    },
-  ]
+  type = list(map(string))
 }
 
 locals {
