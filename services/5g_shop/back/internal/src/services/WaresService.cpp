@@ -13,7 +13,7 @@ WaresService::WaresService(std::shared_ptr<PGConnectionPool> pgConnectionPool)
         : pgConnectionPool(std::move(pgConnectionPool)) {
 }
 
-JustResult WaresService::Create(int sellerId, const std::string &title, const std::string &description, int price) {
+Result<std::string> WaresService::Create(int sellerId, const std::string &title, const std::string &description, int price) {
     Defer defer;
 
     PGresult *result = nullptr;
@@ -27,7 +27,7 @@ JustResult WaresService::Create(int sellerId, const std::string &title, const st
     auto conn = guard.connection->Connection().get();
 
     auto query = format(
-            HiddenStr("insert into wares values (default, %d, '%s', '%s', %d, %d);"),
+            HiddenStr("insert into wares values (default, %d, '%s', '%s', %d, %d) returning id;"),
             sellerId,
             title.c_str(),
             description.c_str(),
@@ -37,11 +37,11 @@ JustResult WaresService::Create(int sellerId, const std::string &title, const st
 
     result = PQexec(conn, query.c_str());
 
-    if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-        return JustResult::ofError(PQerrorMessage(conn));
+    if (PQresultStatus(result) != PGRES_TUPLES_OK || PQntuples(result) != 1) {
+        return Result<std::string>::ofError(PQerrorMessage(conn));
     }
 
-    return JustResult::ofSuccess();
+    return Result<std::string>::ofSuccess(std::string(PQgetvalue(result, 0, 0)));
 }
 
 Result<std::shared_ptr<Ware>> WaresService::Get(int id) {

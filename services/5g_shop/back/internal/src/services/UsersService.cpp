@@ -13,7 +13,7 @@
 
 using namespace shop;
 
-Result<std::string>
+Result<std::shared_ptr<User>>
 UsersService::Create(const std::string &login, const std::string &passwordHash, const std::string &creditCardInfo) {
     Defer defer;
     std::string authCookie = UUID4();
@@ -28,7 +28,7 @@ UsersService::Create(const std::string &login, const std::string &passwordHash, 
     auto conn = guard.connection->Connection().get();
 
     auto query = format(
-            HiddenStr("insert into users values (default, '%s', default, '%s', '%s', '%s', %d);"),
+            HiddenStr("insert into users values (default, '%s', default, '%s', '%s', '%s', %d) returning *;"),
             login.c_str(),
             passwordHash.c_str(),
             authCookie.c_str(),
@@ -38,15 +38,15 @@ UsersService::Create(const std::string &login, const std::string &passwordHash, 
 
     result = PQexec(conn, query.c_str());
 
-    if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+    if (PQresultStatus(result) != PGRES_TUPLES_OK || PQntuples(result) != 1) {
         auto msg = std::string(PQresultErrorMessage(result));
 
         CROW_LOG_ERROR << "creation of user '" << login << "' failed with: " << msg;
 
-        return Result<std::string>::ofError("possible login conflict");
+        return Result<std::shared_ptr<User>>::ofError("possible login conflict");
     }
 
-    return Result<std::string>::ofSuccess(authCookie);
+    return Result<std::shared_ptr<User>>::ofSuccess(User::ReadFromPGResult(result));
 }
 
 Result<std::shared_ptr<User>> UsersService::FindByAuthCookie(const std::string &authCookie) {
