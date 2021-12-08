@@ -201,31 +201,21 @@ func (cp *ControlPanel) PutItem(tokenKey string, opBytes []byte) ([]byte, error)
 
 	cp.stats.AddItem(tokenKey, op.Item)
 
-	user, err := cp.DB.GetUser(tokenKey)
+	container, err := cp.DB.GetContainer(tokenKey, op.ContainerId)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, id := range user.ContainersIds {
-		container, err := cp.DB.GetContainer(tokenKey, id)
-		if err != nil {
-			return nil, err
-		}
-
-		if container.Size > uint8(len(container.Items)) {
-			if err != nil {
-				return nil, err
-			}
-			container.Items = append(container.Items, op.Item)
-			err = cp.DB.SaveContainer(tokenKey, container)
-			if err != nil {
-				return nil, err
-			}
-			return nil, nil
-		}
+	if container.Size < uint8(len(container.Items)) {
+		return nil, errors.New("Container is full")
 	}
 
-	return nil, errors.New("Can't find acceptable container")
+	container.Items = append(container.Items, op.Item)
+	err = cp.DB.SaveContainer(tokenKey, container)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
 }
 
 func (cp *ControlPanel) GetContainerInfo(tokenKey string, opBytes []byte) ([]byte, error) {
@@ -260,7 +250,7 @@ func (cp *ControlPanel) CreateContainer(tokenKey string, opBytes []byte) ([]byte
 		Size:        op.Size,
 		Description: op.Description,
 	}
-	return nil, cp.DB.SaveContainer(tokenKey, &container)
+	return []byte(container.ID), cp.DB.SaveContainer(tokenKey, &container)
 }
 
 func (cp *ControlPanel) GetStatistic(tokenKey string, opBytes []byte) ([]byte, error) {

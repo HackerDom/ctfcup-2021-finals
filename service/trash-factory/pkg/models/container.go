@@ -22,6 +22,7 @@ func (container *Container) SerializeNext(writer *serializeb.Writer) {
 	for _, item := range container.Items {
 		item.SerializeNext(writer)
 	}
+	writer.WriteString(container.Description)
 }
 
 func DeserializeContainer(buf []byte) (Container, error) {

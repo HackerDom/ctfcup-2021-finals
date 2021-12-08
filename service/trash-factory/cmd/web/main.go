@@ -10,11 +10,12 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"trash-factory/pkg/api"
 )
 
 var (
 	sessionsStorage = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
-	client          = NewClient(os.Getenv("CP_ADDR"), "", "")
+	client          = api.NewAdminClient(os.Getenv("CP_ADDR"))
 	pageSize        = 20
 )
 
@@ -69,7 +70,7 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	tokenKey, found := session.Values["tokenKey"]
 	if !found {
-		tokenKey, err = client.createUser()
+		tokenKey, err = client.CreateUser()
 		if err != nil {
 			log.Error(err)
 			http.Error(w, "cant create user", http.StatusBadGateway)
@@ -83,7 +84,7 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user, err := client.getUser(tokenKey.(string))
+	user, err := client.GetUser(tokenKey.(string))
 	if err != nil {
 		log.Error(err)
 		http.Error(w, "cant get user", http.StatusBadGateway)
@@ -111,7 +112,7 @@ func statHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	stat, err := client.getStat(pageN*pageSize, (pageN+1)*pageSize)
+	stat, err := client.GetStat(pageN*pageSize, (pageN+1)*pageSize)
 	if err != nil {
 		log.Error(err)
 		http.Error(w, "cant get stat", http.StatusBadGateway)
@@ -162,13 +163,13 @@ func main() {
 }
 
 func main1() {
-	tokenKey, err := client.createUser()
+	tokenKey, err := client.CreateUser()
 	if err != nil {
 		log.Fatal(err)
 	}
 	rand.Seed(time.Now().Unix())
 	log.Info(tokenKey)
-	user, err := client.getUser(tokenKey)
+	user, err := client.GetUser(tokenKey)
 	if err != nil {
 		log.Fatal(err)
 	}

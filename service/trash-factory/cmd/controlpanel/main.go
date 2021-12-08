@@ -100,16 +100,22 @@ func GenerateTestData() error {
 		if err != nil {
 			return err
 		}
-		err = AddTestContainer(tokenKey)
+		id, err := AddTestContainer(tokenKey)
 		if err != nil {
 			return err
 		}
-		err = AddTestContainer(tokenKey)
+		id2, err := AddTestContainer(tokenKey)
 		if err != nil {
 			return err
 		}
 		for j := 0; j < i+1; j++ {
-			err = PutItem(tokenKey)
+			err = PutItem(tokenKey, id)
+			if err != nil {
+				return err
+			}
+		}
+		for j := 0; j < i+1; j++ {
+			err = PutItem(tokenKey, id2)
 			if err != nil {
 				return err
 			}
@@ -119,13 +125,14 @@ func GenerateTestData() error {
 	return nil
 }
 
-func PutItem(tokenKey string) error {
+func PutItem(tokenKey string, containerId string) error {
 	putItemOp := commands.PutItemOp{
 		models.Item{
 			Type:        1,
 			Description: "trash" + fmt.Sprintf("%08x", rand.Uint64()),
 			Weight:      10,
 		},
+		containerId,
 	}
 	_, err := controlPanel.PutItem(tokenKey, putItemOp.Serialize())
 	if err != nil {
@@ -171,17 +178,17 @@ func PutItem(tokenKey string) error {
 	return errors.New("Item not found")
 }
 
-func AddTestContainer(tokenKey string) error {
+func AddTestContainer(tokenKey string) (string, error) {
 	containerOp := commands.CreateContainerOp{
 		Size:        5,
 		Description: "Fill me up senpai" + fmt.Sprintf("%08x", rand.Uint64()),
 	}
-	_, err := controlPanel.CreateContainer(tokenKey, containerOp.Serialize())
+	id, err := controlPanel.CreateContainer(tokenKey, containerOp.Serialize())
 	if err != nil {
 		log.Error(err)
-		return err
+		return "", err
 	}
-	return nil
+	return string(id), nil
 }
 
 func AddTestUser() (string, error) {

@@ -1,21 +1,31 @@
 package commands
 
-import "trash-factory/pkg/models"
+import (
+	"trash-factory/pkg/models"
+	"trash-factory/pkg/serializeb"
+)
 
 type PutItemOp struct {
 	models.Item
+	ContainerId string
 }
 
 func (op PutItemOp) Serialize() []byte {
-	return op.Item.Serialize()
+	writer := serializeb.NewWriter()
+	op.Item.SerializeNext(&writer)
+	writer.WriteString(op.ContainerId)
+	return writer.GetBytes()
 }
 
 func DeserializePutItemOpOp(buf []byte) (PutItemOp, error) {
-	item, err := models.DeserializeItem(buf)
+	reader := serializeb.NewReader(buf)
+	item, err := models.DeserializeNextItem(reader)
+	containerId, err := reader.ReadString()
 	if err != nil {
 		return PutItemOp{}, err
 	}
 	return PutItemOp{
 		item,
+		containerId,
 	}, nil
 }
