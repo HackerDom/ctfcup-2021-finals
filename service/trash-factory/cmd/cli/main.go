@@ -70,30 +70,9 @@ func main() {
 	data := flag.String("data", "", "data string")
 	flag.Parse()
 
-	Run(adrr, command, data)
-
-	//a := "127.0.0.1"
-	//c := "check"
-	//d := ""
-	//v := Run(&a, &c, &d)
-	//log.Info(v)
-	//
-	//c = "put1"
-	//d = "asdasdas"
-	//v = Run(&a, &c, &d)
-	//log.Info(v)
-	//
-	//c = "get1"
-	//v = Run(&a, &c, &v.Reason)
-	//
-	//c = "put2"
-	//d = "test_flag"
-	//v = Run(&a, &c, &d)
-	//log.Info(v)
-	//
-	//c = "get2"
-	//v = Run(&a, &c, &v.Reason)
-	//log.Info(v)
+	v := Run(adrr, command, data)
+	fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
+	fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
 }
 
 func Run(adrr *string, command *string, data *string) Verdict {
