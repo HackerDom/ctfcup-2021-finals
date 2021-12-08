@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-REGISTRY=cr.yandex/e2lqkrnu4ardtff6uhc4
+REGISTRY=cr.yandex/crp649c8570akro5vmp6
 
 src=$1
 dst="$REGISTRY/$1"
