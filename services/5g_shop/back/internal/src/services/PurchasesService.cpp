@@ -12,7 +12,7 @@ PurchasesService::PurchasesService(std::shared_ptr<PGConnectionPool> pgConnectio
         : pgConnectionPool(std::move(pgConnectionPool)) {
 }
 
-JustResult PurchasesService::Create(int buyerId, int wareId) {
+Result<std::string> PurchasesService::Create(int buyerId, int wareId) {
     Defer defer;
 
     PGresult *result = nullptr;
@@ -24,22 +24,22 @@ JustResult PurchasesService::Create(int buyerId, int wareId) {
     auto conn = guard.connection->Connection().get();
 
     auto query = format(
-            HiddenStr("insert into purchases values (default, %d, %d);"),
+            HiddenStr("insert into purchases values (default, %d, %d) returning id;"),
             wareId,
             buyerId
     );
 
     result = PQexec(conn, query.c_str());
 
-    if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+    if (PQresultStatus(result) != PGRES_TUPLES_OK || PQntuples(result) != 1) {
         auto msg = std::string(PQresultErrorMessage(result));
 
         CROW_LOG_ERROR << "error creating new purchase: " << msg;
 
-        return JustResult::ofError(msg);
+        return Result<std::string>::ofError(msg);
     }
 
-    return JustResult::ofSuccess();
+    return Result<std::string>::ofSuccess(std::string(PQgetvalue(result, 0, 0)));
 }
 
 Result<std::vector<std::shared_ptr<Purchase>>> PurchasesService::GetOfUser(int userId) {

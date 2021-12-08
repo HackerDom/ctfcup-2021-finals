@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <string>
 
 #include "models/PGConnectionPool.h"
 #include "models/Purchase.h"
@@ -13,7 +14,7 @@ namespace shop {
     public:
         explicit PurchasesService(std::shared_ptr<PGConnectionPool> pgConnectionPool);
 
-        JustResult Create(int buyerId, int wareId);
+        Result<std::string> Create(int buyerId, int wareId);
 
         Result<std::vector<std::shared_ptr<Purchase>>> GetOfUser(int userId);
 

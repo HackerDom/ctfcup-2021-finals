@@ -13,7 +13,7 @@ namespace shop {
     public:
         explicit WaresService(std::shared_ptr<PGConnectionPool> pgConnectionPool);
 
-        JustResult Create(int sellerId, const std::string &title, const std::string &description, int price);
+        Result<std::string> Create(int sellerId, const std::string &title, const std::string &description, int price);
 
         Result<std::vector<std::shared_ptr<Ware>>> GetWaresOfUser(int userId);
 

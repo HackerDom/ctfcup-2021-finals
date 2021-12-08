@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import random
+import os
 
 user_agents_list = []
 
@@ -22,5 +23,5 @@ def get_random_user_agent():
 
 
 def __get():
-    with open('useragents') as fin:
+    with open(f'{os.path.dirname(os.path.realpath(__file__))}/useragents') as fin:
         return [line.strip() for line in fin]

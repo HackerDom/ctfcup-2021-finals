@@ -27,9 +27,14 @@ response CreateUser(::App &app, const request &req, UsersService &usersService) 
 
     auto &ctx = app.get_context<CookieParser>(req);
 
-    ctx.set_cookie(AuthCookieName, result.value);
+    ctx.set_cookie(AuthCookieName, result.value->authCookie);
 
-    return response(status::CREATED);
+    json::wvalue data({
+                              {"id",          result.value->id},
+                              {"auth_cookie", result.value->authCookie}
+                      });
+
+    return {status::CREATED, data};
 }
 
 response UserAuth(::App &app, const request &req, UsersService &usersService) {
@@ -114,7 +119,7 @@ response GetUser(::App &app, const request &req, UsersService &usersService, int
 response CreateWare(::App &app, const request &req, WaresService &waresService, UsersService &usersService) {
     auto json = json::load(req.body);
     if (!json || !json.has("title") || !json.has("description") || !json.has("price") || json["price"].i() <= 0 ||
-        json["price"].i() > 100500) {
+        json["price"].i() > 3 * 100500) {
         return response(status::BAD_REQUEST);
     }
 
@@ -140,7 +145,11 @@ response CreateWare(::App &app, const request &req, WaresService &waresService, 
         return response(status::INTERNAL_SERVER_ERROR);
     }
 
-    return response(status::CREATED);
+    json::wvalue data({
+                              {"id", wareCreated.value}
+                      });
+
+    return {status::CREATED, data};
 }
 
 response
@@ -286,11 +295,18 @@ response MakePurchase(::App &app, const request &req, UsersService &usersService
         return response(status::NOT_FOUND);
     }
 
-    return response(status::CREATED);
+    json::wvalue data(
+            {
+                    {"id", result.value}
+            }
+    );
+
+    return {status::CREATED, data};
 }
 
-response GetPurchasesOfUser(::App &app, const request &req, UsersService &usersService, PurchasesService &purchasesService,
-                            int userId = -1) {
+response
+GetPurchasesOfUser(::App &app, const request &req, UsersService &usersService, PurchasesService &purchasesService,
+                   int userId = -1) {
     auto &ctx = app.get_context<CookieParser>(req);
     auto authCookie = ctx.get_cookie(AuthCookieName);
 

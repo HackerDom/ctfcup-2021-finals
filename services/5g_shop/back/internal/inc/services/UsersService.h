@@ -12,7 +12,7 @@ namespace shop {
     public:
         explicit UsersService(std::shared_ptr<PGConnectionPool> connectionPool);
 
-        Result<std::string> Create(const std::string &login, const std::string &passwordHash, const std::string &creditCardInfo);
+        Result<std::shared_ptr<User>> Create(const std::string &login, const std::string &passwordHash, const std::string &creditCardInfo);
 
         Result<std::shared_ptr<User>> FindByAuthCookie(const std::string &authCookie);
 
