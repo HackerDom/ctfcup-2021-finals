@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 SERVICES = [
-  'example_service',
+  'trash-factory',
+  '5g_shop'
 ]
 
 
