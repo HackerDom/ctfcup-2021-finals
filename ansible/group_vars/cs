@@ -31,7 +31,7 @@ cs_static_path: '/home/cs/ctf-scoreboard-client/scoreboard/build'
 
 cs_base_url: http://10.118.0.10/
 cs_admin_auth: root:f819a1f55484754181ae8de3ef37ffcd2d20c1af
-cs_ctf_name: CTFCup 2021 AD
+cs_ctf_name: CTFCup 2021 final
 cs_flags_secret: 2d61d007403d7766f62815b6bfb14184dbd12d2a
 cs_round_length: 60
 cs_flag_life_time: 12
@@ -50,7 +50,6 @@ teams: |
 
 
 services: |
-  {name => 'ATM-machine',  path => 'checkers/ATM-machine/checker.py', timeout => 30, port_prefix => '1'},
-  {name => 'ctfland',      path => 'checkers/ctfland/checker.py',     timeout => 30, port_prefix => '2'},
-  {name => 'resoccessor',  path => 'checkers/resoccessor/checker.py', timeout => 30, port_prefix => '3'},
+  {name => 'trash-factory',  path => 'checkers/trash-factory/checker.py', timeout => 30, port_prefix => '1'},
+  {name => '5g_shop',      path => 'checkers/5g_shop/checker.py',     timeout => 30, port_prefix => '2'},
 
