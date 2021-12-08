@@ -10,6 +10,7 @@ services:
     environment:
       - PORT=8080
       - CP_ADDR=controlpanel:9090
+      - SESSIONS_KEY="TFMyyqx&AK;MCbmYnnA-DuMpe"
     volumes:
     - ./cmd/web/templates:/templates
     restart: always
