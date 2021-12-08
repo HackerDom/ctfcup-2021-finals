@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"github.com/gocolly/colly"
 	log "github.com/sirupsen/logrus"
+	"math/rand"
 	"net"
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 	"trash-factory/pkg/api"
 	"trash-factory/pkg/models"
 )
@@ -65,6 +67,7 @@ func (e Endpoints) GetWebUrl() string {
 
 func main() {
 	//
+	rand.Seed(time.Now().UnixMilli())
 	adrr := flag.String("addr", "", "backend url")
 	command := flag.String("command", "", "command : check, put1, put2, get1, get2")
 	data := flag.String("data", "", "data string")

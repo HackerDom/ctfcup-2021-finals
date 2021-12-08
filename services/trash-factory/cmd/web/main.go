@@ -161,17 +161,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-func main1() {
-	tokenKey, err := client.CreateUser()
-	if err != nil {
-		log.Fatal(err)
-	}
-	rand.Seed(time.Now().Unix())
-	log.Info(tokenKey)
-	user, err := client.GetUser(tokenKey)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Info(user)
-}
