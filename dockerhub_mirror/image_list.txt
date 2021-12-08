@@ -1,0 +1,4 @@
+gradle:7.1.0-jdk16
+openjdk:16-jdk-alpine
+postgres:14.1-alpine
+postgres:latest
