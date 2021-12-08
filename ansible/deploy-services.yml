@@ -4,6 +4,6 @@
 
 - hosts: 5g-shop
   roles:
-     - { role: service, service_name: 5g-shop, tags: [5g-shop] }
+     - { role: service, service_name: 5g_shop, tags: [5g_shop] }
 
 
