@@ -1,0 +1,13 @@
+# ansible logs
+ansible/.log
+
+# terraform stuff
+shell_secrets.sh
+secrets.sh
+.terraform
+*.tfstate
+terraform.tfstate.backup
+.terraform.lock.hcl
+
+# vim
+*.swp

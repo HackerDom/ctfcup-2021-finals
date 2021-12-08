@@ -1,0 +1,25 @@
+- name: packages
+  apt:
+    name:
+      - git
+      - htop
+      - vim
+      - mc
+      - docker.io
+      - nginx
+      - dnsmasq
+    state: latest
+    update_cache: yes
+
+- name: nginx http services proxy
+  template: src=http_services.j2 dest=/etc/nginx/sites-enabled/http_services.conf
+  tags: update
+  notify:
+    - reload nginx
+
+- name: nginx sream services proxy
+  template: src=stream_services.j2 dest=/etc/nginx/modules-enabled/stream_services.conf
+  tags: update
+  notify:
+    - reload nginx
+

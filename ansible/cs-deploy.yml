@@ -1,0 +1,27 @@
+- hosts: cs
+  roles:
+    - common
+
+- hosts: monitoring
+  roles:
+    - role: monitoring
+      tags: monitoring
+
+- hosts: db
+  roles:
+    - db
+
+- hosts: master
+  roles:
+    - manager
+    - web
+    - watcher
+    - scoreboard
+
+- hosts: flags
+  roles:
+    - flags
+
+- hosts: checkers, master
+  roles:
+    - checkers

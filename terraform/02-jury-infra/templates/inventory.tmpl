@@ -1,0 +1,27 @@
+[servers]
+cs-main ansible_host=${cs-main-ip} ansible_user=ubuntu ansible_become=true ansible_python_interpreter=/usr/bin/python3
+cs-worker ansible_host=${cs-worker-ip} ansible_user=ubuntu ansible_become=true ansible_python_interpreter=/usr/bin/python3
+
+[proxy]
+%{ for ip in proxy-ip ~}
+${ip} ansible_user=ubuntu ansible_become=true ansible_python_interpreter=/usr/bin/python3
+%{ endfor ~}
+
+[master]
+cs-main
+
+[flags]
+cs-main
+
+[db]
+cs-main
+
+[checkers]
+cs-worker
+
+[cs:children]
+master
+flags
+db
+checkers
+

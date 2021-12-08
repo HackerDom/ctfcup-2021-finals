@@ -1,0 +1,17 @@
+#jinja2: lstrip_blocks: "True"
+[Unit]
+    Description=CTFCup 2021: {{ service_name }}
+    After=network-online.target docker.service
+    Wants=network-online.target docker.service
+    Requires=docker.service
+
+[Service]
+    ExecStart=docker-compose up
+    WorkingDirectory=/home/ctfcup/{{ service_name }}
+    User=ctfcup
+    Group=ctfcup
+    Restart=on-failure
+    StartLimitBurst=3
+    StartLimitInterval=60s
+[Install]
+    WantedBy=multi-user.target

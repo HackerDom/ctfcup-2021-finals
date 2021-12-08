@@ -1,0 +1,15 @@
+#cloud-config
+users:
+  - name: serial-console-user
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    lock_passwd: False
+    passwd: ${hashed_password}
+
+  - name: ${user}
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh-authorized-keys: ${jsonencode(ssh_keys)}
+

@@ -1,0 +1,56 @@
+cs_user: cs
+cs_dir:  /home/cs/checksystem
+cs_repo: https://github.com/xelez/checksystem.git
+cs_version: ctfcup2021
+cs_scoreboard_dir: /home/cs/ctf-scoreboard-client
+
+pg_cs_user: cs
+pg_cs_pass: 08bda4569da7ae63fe76122187cd81b5ef0bc8c3
+pg_cs_db: cs
+pg_cs_host: 10.118.0.10
+pg_cs_port: 5432
+pg_max_connections: 1024
+pg_shared_buffers: 2GB
+pg_work_mem: 512MB
+
+cs_limit_nofile: 10000
+
+cs_worker_default_jobs: 4
+cs_worker_checkers_jobs: 128
+cs_worker_checkers_queues: -q checker
+cs_worker_instance: 2
+
+cs_hypnotoad_listen: 127.0.0.1:8080
+cs_hypnotoad_flags_listen: 127.0.0.1:8080
+cs_hypnotoad_workers: 4
+cs_hypnotoad_accepts: 1024
+cs_nginx_upstream_keepalive: 32
+cs_nginx_workers: 4
+cs_nginx_listen: 80
+cs_static_path: '/home/cs/ctf-scoreboard-client/scoreboard/build'
+
+cs_base_url: http://10.118.0.10/
+cs_admin_auth: root:f819a1f55484754181ae8de3ef37ffcd2d20c1af
+cs_ctf_name: CTFCup 2021 AD
+cs_flags_secret: 2d61d007403d7766f62815b6bfb14184dbd12d2a
+cs_round_length: 60
+cs_flag_life_time: 12
+cs_time: "['2021-12-04 00:00:00', '2021-12-11 23:59:00']"
+#cs_time: "['2019-10-15 10:00:00', '2019-10-15 17:00:00'], ['2019-10-16 10:00:00', '2019-10-16 17:00:00'], ['2019-10-17 07:59:59', '2019-10-17 15:59:00']"
+
+
+cs_checkers_hostname_cb: |
+  sub { my ($team, $service) = @_; "10.118.0.20:$service->{port_prefix}$team->{team_id}" }
+
+teams: |
+  {name => 'Команда Лучкиных Вячеславов', network => '10.118.101.0/24', host => '10.118.101.0', team_id => '101', token => '961bad80437d6140ce70', logo => '/data/logos/101'},
+  {name => 'C4T BuT S4D', network => '10.118.102.0/24', host => '10.118.102.0', team_id => '102', token => 'cab4496c1e740638b49d', logo => '/data/logos/102'},
+  {name => 'SPRUSH', network => '10.118.103.0/24', host => '10.118.103.0', team_id => '103', token => 'f6026a06def986fde14c', logo => '/data/logos/103'},
+  {name => '♿️🅵🅰️🅺🅰️🅿️🅿️🅰️♿️', network => '10.118.104.0/24', host => '10.118.104.0', team_id => '104', token => '8d705220eefea5d7a157', logo => '/data/logos/104'},
+
+
+services: |
+  {name => 'ATM-machine',  path => 'checkers/ATM-machine/checker.py', timeout => 30, port_prefix => '1'},
+  {name => 'ctfland',      path => 'checkers/ctfland/checker.py',     timeout => 30, port_prefix => '2'},
+  {name => 'resoccessor',  path => 'checkers/resoccessor/checker.py', timeout => 30, port_prefix => '3'},
+
