@@ -1,12 +1,12 @@
 
-name: Check trash-factory
+name: Check example_service
 on:
   push:
     branches:
       - main
     paths:
-      - 'services/trash-factory/**'
-      - 'checkers/trash-factory/**'
+      - 'services/example_service/**'
+      - 'checkers/example_service/**'
   workflow_dispatch:
     inputs:
       cleanup_before_deploy:
@@ -15,8 +15,8 @@ on:
         default: "no"
 
 jobs:
-  check_trash-factory:
-    name: Check trash-factory
+  check_example_service:
+    name: Check example_service
     runs-on: ubuntu-20.04
 
     steps:
@@ -24,10 +24,10 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Run prebuilt hook
-      run: if [ -f services/trash-factory/before_image_build.sh ]; then (cd ./services/trash-factory && ./before_image_build.sh); fi
+      run: if [ -f services/example_service/before_image_build.sh ]; then (cd ./services/example_service && ./before_image_build.sh); fi
 
-    - name: Setup trash-factory
-      run: (cd ./services/trash-factory && docker-compose pull && docker-compose build && docker-compose up --build -d)
+    - name: Setup example_service
+      run: (cd ./services/example_service && docker-compose pull && docker-compose build && docker-compose up --build -d)
 
     - name: Prepare python for checker
       uses: actions/setup-python@v2
@@ -35,14 +35,14 @@ jobs:
         python-version: 3.9
 
     - name: Setup checker libraries
-      run: if [ -f checkers/trash-factory/requirements.txt ]; then python -m pip install -r checkers/trash-factory/requirements.txt; fi
+      run: if [ -f checkers/example_service/requirements.txt ]; then python -m pip install -r checkers/example_service/requirements.txt; fi
 
     - name: Test checker on service
-      run: (cd ./checkers/trash-factory && ./checker.py TEST 127.0.0.1)
+      run: (cd ./checkers/example_service && ./checker.py TEST 127.0.0.1)
 
-  update_trash-factory:
+  update_example_service:
     name: Deploy service using ansible to first teams
-    needs: check_trash-factory
+    needs: check_example_service
     runs-on: deployer
     #if: ${{ false }} # disable on game just in case
 
@@ -57,11 +57,11 @@ jobs:
       run: chmod 0600 ./teams/for_devs.ssh_key
 
     - name: Run prebuilt hook
-      run: if [ -f services/trash-factory/before_image_build.sh ]; then (cd ./services/trash-factory && ./before_image_build.sh); fi
+      run: if [ -f services/example_service/before_image_build.sh ]; then (cd ./services/example_service && ./before_image_build.sh); fi
 
     - name: update checkers
       run: cd ./ansible && ansible-playbook cs-checkers.yml
 
-    - name: deploy trash-factory
-      run: cd ./ansible && ansible-playbook --extra-vars cleanup_service=${{ github.event.inputs.cleanup_before_deploy }} -t trash-factory -l trash-factory deploy-services.yml
+    - name: deploy example_service
+      run: cd ./ansible && ansible-playbook --extra-vars cleanup_service=${{ github.event.inputs.cleanup_before_deploy }} -t example_service -l example_service deploy-services.yml
 

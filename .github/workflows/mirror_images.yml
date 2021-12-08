@@ -1,0 +1,23 @@
+
+name: Mirror dockerhub images
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'dockerhub_mirror/**'
+  workflow_dispatch: {}
+
+jobs:
+  mirror_images:
+    name: Mirror images to local registry
+    runs-on: deployer
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+
+    - name: mirror images
+      run: cd ./dockerhub_mirror && ./mirror_all.sh
+
+
