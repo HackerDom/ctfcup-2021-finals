@@ -12,7 +12,7 @@ variable "services" {
       "id": 1,
     },
     {
-      "name": "5g_shop",
+      "name": "5g-shop",
       "template": "setup_empty.sh",
       "id": 2,
     },

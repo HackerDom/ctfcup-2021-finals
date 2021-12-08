@@ -42,13 +42,6 @@ variable "serial_ssh_password_hash" {
 variable "services" {
   default = []
   type = list(map(string))
-
-# example
-#    {
-#      "name": "chessbase",
-#      "template": "setup_empty.sh",
-#      "id": 1,
-#    },
 }
 
 locals {
