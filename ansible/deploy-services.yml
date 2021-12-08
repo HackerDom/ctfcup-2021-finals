@@ -2,8 +2,8 @@
   roles:
      - { role: service, service_name: trash-factory, tags: [trash-factory] }
 
-- hosts: 5g_shop
+- hosts: 5g-shop
   roles:
-     - { role: service, service_name: 5g_shop, tags: [5g_shop] }
+     - { role: service, service_name: 5g-shop, tags: [5g-shop] }
 
 
