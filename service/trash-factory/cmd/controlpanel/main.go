@@ -1,16 +1,11 @@
 package main
 
 import (
-	"encoding/binary"
-	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"math/rand"
 	"net"
 	"os"
 	"strings"
-	"trash-factory/pkg/commands"
-	"trash-factory/pkg/models"
 )
 
 var (
@@ -58,11 +53,6 @@ func handleConn(conn net.Conn) {
 }
 
 func main() {
-	err := GenerateTestData()
-	if err != nil {
-		return
-	}
-
 	port, exist := os.LookupEnv("PORT")
 	if !exist {
 		log.Fatal("PORT not found")
@@ -92,133 +82,4 @@ func main() {
 		go handleConn(conn)
 	}
 
-}
-
-func GenerateTestData() error {
-	for i := 0; i < 3; i++ {
-		tokenKey, err := AddTestUser()
-		if err != nil {
-			return err
-		}
-		id, err := AddTestContainer(tokenKey)
-		if err != nil {
-			return err
-		}
-		id2, err := AddTestContainer(tokenKey)
-		if err != nil {
-			return err
-		}
-		for j := 0; j < i+1; j++ {
-			err = PutItem(tokenKey, id)
-			if err != nil {
-				return err
-			}
-		}
-		for j := 0; j < i+1; j++ {
-			err = PutItem(tokenKey, id2)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func PutItem(tokenKey string, containerId string) error {
-	putItemOp := commands.PutItemOp{
-		models.Item{
-			Type:        1,
-			Description: "trash" + fmt.Sprintf("%08x", rand.Uint64()),
-			Weight:      10,
-		},
-		containerId,
-	}
-	_, err := controlPanel.PutItem(tokenKey, putItemOp.Serialize())
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	user, err := controlPanel.GetUser(tokenKey, commands.GetUserOp{
-		TokenKey: tokenKey,
-	}.Serialize())
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	deserializeUser, err := models.DeserializeUser(user)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	for _, id := range deserializeUser.ContainersIds {
-		info, err := controlPanel.GetContainerInfo(tokenKey, commands.GetContainerInfoOp{ContainerID: id}.Serialize())
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-
-		container, err := models.DeserializeContainer(info)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-		for _, item := range container.Items {
-			if item.Weight == putItemOp.Weight &&
-				item.Type == putItemOp.Type &&
-				item.Description == putItemOp.Description {
-				return nil
-			}
-		}
-
-	}
-	log.Error("Item not found")
-	return errors.New("Item not found")
-}
-
-func AddTestContainer(tokenKey string) (string, error) {
-	containerOp := commands.CreateContainerOp{
-		Size:        5,
-		Description: "Fill me up senpai" + fmt.Sprintf("%08x", rand.Uint64()),
-	}
-	id, err := controlPanel.CreateContainer(tokenKey, containerOp.Serialize())
-	if err != nil {
-		log.Error(err)
-		return "", err
-	}
-	return string(id), nil
-}
-
-func AddTestUser() (string, error) {
-	tokenKey := fmt.Sprintf("%08x", rand.Uint64())
-	t := make([]byte, 8)
-	binary.LittleEndian.PutUint64(t, rand.Uint64())
-	op := commands.CreateUserOp{
-		Token:    t,
-		TokenKey: tokenKey,
-	}
-	_, err := controlPanel.CreateUser(controlPanel.AdminCredentials.TokenKey, op.Serialize())
-	if err != nil {
-		log.Error(err)
-		return "", err
-	}
-
-	user, err := controlPanel.GetUser(controlPanel.AdminCredentials.TokenKey, commands.GetUserOp{
-		TokenKey: tokenKey,
-	}.Serialize())
-	if err != nil {
-		return "", err
-	}
-
-	deserializeUser, err := models.DeserializeUser(user)
-	if err != nil {
-		return "", err
-	}
-
-	if deserializeUser.TokenKey != tokenKey || string(deserializeUser.Token) != string(op.Token) {
-		log.Error("User serialization bug", user, deserializeUser)
-	}
-	return tokenKey, err
 }
