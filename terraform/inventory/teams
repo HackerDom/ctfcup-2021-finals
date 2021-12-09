@@ -3,7 +3,7 @@
 10.118.102.11 ansible_user=ctfcup ansible_become=true ansible_python_interpreter=/usr/bin/python3
 10.118.103.11 ansible_user=ctfcup ansible_become=true ansible_python_interpreter=/usr/bin/python3
 10.118.104.11 ansible_user=ctfcup ansible_become=true ansible_python_interpreter=/usr/bin/python3
-[5g_shop]
+[5g-shop]
 10.118.101.12 ansible_user=ctfcup ansible_become=true ansible_python_interpreter=/usr/bin/python3
 10.118.102.12 ansible_user=ctfcup ansible_become=true ansible_python_interpreter=/usr/bin/python3
 10.118.103.12 ansible_user=ctfcup ansible_become=true ansible_python_interpreter=/usr/bin/python3

@@ -63,5 +63,5 @@ jobs:
       run: cd ./ansible && ansible-playbook cs-checkers.yml
 
     - name: deploy 5g_shop
-      run: cd ./ansible && ansible-playbook --extra-vars cleanup_service=${{ github.event.inputs.cleanup_before_deploy }} -t 5g_shop -l 5g-shop deploy-services.yml
+      run: cd ./ansible && ansible-playbook --extra-vars cleanup_service=${{ github.event.inputs.cleanup_before_deploy }} -t 5g-shop -l 5g-shop deploy-services.yml
 
