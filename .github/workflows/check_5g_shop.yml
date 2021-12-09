@@ -38,7 +38,7 @@ jobs:
       run: if [ -f checkers/5g_shop/requirements.txt ]; then python -m pip install -r checkers/5g_shop/requirements.txt; fi
 
     - name: Test checker on service
-      run: (cd ./checkers/5g_shop && ./checker.py TEST 127.0.0.1)
+      run: (cd ./checkers/5g_shop && ./checker.py TEST 127.0.0.1:4040)
 
   update_5g_shop:
     name: Deploy service using ansible to first teams
