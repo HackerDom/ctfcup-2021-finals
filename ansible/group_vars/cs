@@ -51,5 +51,5 @@ teams: |
 
 services: |
   {name => 'trash-factory',  path => 'checkers/trash-factory/checker.py', timeout => 30, port_prefix => '1'},
-  {name => '5g_shop',        path => 'checkers/5g_shop/checker.py',       timeout => 30, port_prefix => '2'},
+  {name => '5g_shop',        path => 'checkers/5g_shop/checker.py',       timeout => 30, port_prefix => '3'},
 
