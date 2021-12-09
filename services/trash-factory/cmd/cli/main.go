@@ -301,6 +301,7 @@ func CreateUser(addr string) (string, string, error) {
 	var token string
 	c := colly.NewCollector()
 
+	var lastE *colly.HTMLElement
 	// Find and visit all links
 	c.OnHTML("a[href=\"/token\"]", func(e *colly.HTMLElement) {
 		err := e.Request.Visit(e.Attr("href"))
@@ -310,6 +311,7 @@ func CreateUser(addr string) (string, string, error) {
 	})
 
 	c.OnHTML("div[class=\"token-info\"]", func(e *colly.HTMLElement) {
+		lastE = e
 		keyPattern := regexp.MustCompile("TOKEN KEY: (.*)")
 		tokkenPattern := regexp.MustCompile("TOKEN: (.*)")
 		r := keyPattern.FindStringSubmatch(e.Text)
@@ -325,6 +327,8 @@ func CreateUser(addr string) (string, string, error) {
 	err := c.Visit(fmt.Sprintf("http://%s", addr))
 
 	if tokenKey == "" || token == "" {
+		log.Error(fmt.Sprintf("%s. Key %s Token %s", "Can't parse user", tokenKey, token))
+		log.Error(lastE.Text)
 		return "", "", error(NewVerdict(MUMBLE, "Can't register user"))
 	}
 
