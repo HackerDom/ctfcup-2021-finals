@@ -81,8 +81,11 @@ func main() {
 func Run(adrr *string, command *string, data *string) Verdict {
 	cpPort := "9090"
 	webPort := "8080"
+	host := *adrr
 	if strings.Contains(*adrr, ":") {
-		port := strings.Split(*adrr, ":")[1]
+		parts := strings.Split(*adrr, ":")
+		host = parts[0]
+		port := parts[1]
 		cpPort = "21" + port[2:]
 		webPort = "11" + port[2:]
 	}
@@ -90,7 +93,7 @@ func Run(adrr *string, command *string, data *string) Verdict {
 	endpoint := Endpoints{
 		CPPort:  cpPort,
 		WebPort: webPort,
-		Addr:    *adrr,
+		Addr:    host,
 	}
 
 	switch *command {
