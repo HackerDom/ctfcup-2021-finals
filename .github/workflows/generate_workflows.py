@@ -65,7 +65,7 @@ jobs:
       run: chmod 0600 ./teams/for_devs.ssh_key
 
     - name: Run prebuilt hook
-      run: if [ -f services/{service}/before_image_build.sh ]; then (cd ./services/{service} && ./before_image_build.sh); fi
+      run: if [ -f services/{service}/before_image_build.sh ]; then (cd ./services/{service} && sudo ./before_image_build.sh); fi
 
     - name: update checkers
       run: cd ./ansible && ansible-playbook cs-checkers.yml
