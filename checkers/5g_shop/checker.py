@@ -294,6 +294,24 @@ def check_upload_image(host, auth):
         return None, mumble
 
     response = get_session_with_retry().get(
+        f'http://{host}{path}'
+    )
+    if down_status_code(response):
+        return None, down
+
+    if response.status_code != 200:
+        return None, mumble
+
+    content = response.content
+    if len(data) != len(content):
+        return None, mumble
+
+    for i in range(len(data)):
+        if data[i] != content[i]:
+            log.error('returning files are not equals')
+            return None, mumble
+
+    response = get_session_with_retry().get(
         f'http://{host}/api/images/{id_}',
         headers={'User-Agent': get_random_user_agent()},
         cookies={AUTH_COOKIE_NAME: auth}
