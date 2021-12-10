@@ -25,8 +25,7 @@ def check(check_request: CheckRequest) -> Verdict:
     r = subprocess.Popen([f"{path}/cli", f"--addr={check_request.hostname}", "--command=check"], stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     lines = r.stdout.readlines()
-    for line in lines:
-        print(line.decode("utf-8"))
+    Log(lines)
     return ParseVerdict(lines)
 
 
@@ -36,8 +35,7 @@ def put(put_request: PutRequest) -> Verdict:
     r = subprocess.Popen([f"{path}/cli", f"--addr={put_request.hostname}", "--command=put1"], stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     lines = r.stdout.readlines()
-    for line in lines:
-        print(line.decode("utf-8"))
+    Log(lines)
     return ParseVerdict(lines)
 
 
@@ -45,11 +43,10 @@ def put(put_request: PutRequest) -> Verdict:
 def get(get_request: GetRequest) -> Verdict:
     print(get_request.flag_id)
     path = os.path.dirname(os.path.realpath(__file__))
-    r = subprocess.Popen([f"{path}/cli", f"--addr={get_request.hostname}", "--command=get1", f"--data={get_request.flag_id[:-1]}"], stdout=subprocess.PIPE,
+    r = subprocess.Popen([f"{path}/cli", f"--addr={get_request.hostname}", "--command=get1", f"--data={get_request.flag_id[:]}"], stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     lines = r.stdout.readlines()
-    for line in lines:
-        print(line.decode("utf-8"))
+    Log(lines)
     return ParseVerdict(lines)
 
 
@@ -59,8 +56,7 @@ def put2(put_request: PutRequest) -> Verdict:
     r = subprocess.Popen([f"{path}/cli", f"--addr={put_request.hostname}", "--command=put2", f"--data={put_request.flag}"], stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     lines = r.stdout.readlines()
-    for line in lines:
-        print(line.decode("utf-8"))
+    Log(lines)
     return ParseVerdict(lines)
 
 
@@ -69,12 +65,11 @@ def get2(get_request: GetRequest) -> Verdict:
     print(get_request.flag_id)
     path = os.path.dirname(os.path.realpath(__file__))
     r = subprocess.Popen(
-        [f"{path}/cli", f"--addr={get_request.hostname}", "--command=get2", f"--data={get_request.flag_id[:-1]}"],
+        [f"{path}/cli", f"--addr={get_request.hostname}", "--command=get2", f"--data={get_request.flag_id[:]}"],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
     lines = r.stdout.readlines()
-    for line in lines:
-        print(line.decode("utf-8"))
+    Log(lines)
     return ParseVerdict(lines)
 
 
@@ -94,6 +89,13 @@ def ParseVerdict(lines) -> Verdict:
         return Verdict.CHECKER_ERROR("Can't parse verdict")
 
     return Verdict(code, reason)
+
+
+def Log(lines):
+    for line in lines:
+        print(line.decode("utf-8"))
+
+
 
 
 if __name__ == '__main__':
