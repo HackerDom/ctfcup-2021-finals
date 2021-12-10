@@ -3,11 +3,9 @@ package main
 import (
 	"encoding/hex"
 	"errors"
-	"flag"
 	"fmt"
 	"github.com/gocolly/colly"
 	log "github.com/sirupsen/logrus"
-	"math/rand"
 	"net"
 	"net/http"
 	"reflect"
@@ -67,16 +65,16 @@ func (e Endpoints) GetWebUrl() string {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixMilli())
-	addr := flag.String("addr", "", "backend url")
-	command := flag.String("command", "", "command : check, put1, put2, get1, get2")
-	data := flag.String("data", "", "data string")
-	flag.Parse()
+	//rand.Seed(time.Now().UnixMilli())
+	//addr := flag.String("addr", "", "backend url")
+	//command := flag.String("command", "", "command : check, put1, put2, get1, get2")
+	//data := flag.String("data", "", "data string")
+	//flag.Parse()
 
-	v := Run(addr, command, data)
-	fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
-	fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
-	//Test()
+	//v := Run(addr, command, data)
+	//fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
+	//fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
+	Test()
 }
 
 func Test() {
@@ -211,14 +209,39 @@ func EnsureSuccess(err error) (Verdict, bool) {
 }
 
 func Check(endpoints *Endpoints) error {
-
 	tokenKey, token, err := CreateUser(endpoints.GetWebUrl())
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 	client := api.NewClient(endpoints.GetCPUrl(), tokenKey, token)
+	err = CheckUser(err, client, tokenKey)
+	if err != nil {
+		return err
+	}
 
+	i := 0
+	for {
+		stat, err := client.GetStat(i*20, (i+1)*20)
+		if err != nil {
+			return err
+		}
+
+		if len(stat.Users) == 0 {
+			return error(NewVerdict(MUMBLE, "Stats corrupted"))
+		}
+
+		for _, user := range stat.Users {
+			if user.TokenKey == tokenKey {
+				log.Info("Check OK")
+				return nil
+			}
+		}
+		i++
+	}
+}
+
+func CheckUser(err error, client *api.Client, tokenKey string) error {
 	log.Info("Try get user")
 	user, err := client.GetUser(tokenKey)
 	if err != nil {
@@ -270,7 +293,6 @@ func Check(endpoints *Endpoints) error {
 	if !reflect.DeepEqual(container, expectedContainer) {
 		return errors.New("Actual container not equal expected")
 	}
-	log.Info("Check OK")
 	return nil
 }
 
