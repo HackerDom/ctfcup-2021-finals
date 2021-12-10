@@ -86,6 +86,11 @@ API_PORT = 4040
 AUTH_COOKIE_NAME = '5GAuth'
 
 mumble = Verdict.MUMBLE('wrong server response')
+down = Verdict.DOWN("service not responding")
+
+
+def down_status_code(response):
+    return response.status_code == 502 or response.status_code == 503
 
 
 @checker.define_put(vuln_num=1, vuln_rate=1)
@@ -109,6 +114,9 @@ def put(put_request: PutRequest) -> Verdict:
 
         log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
 
+        if down_status_code(response):
+            return down
+
         if response.status_code != 201:
             log.error(f'unexpected code - {response.status_code}')
             return mumble
@@ -119,10 +127,10 @@ def put(put_request: PutRequest) -> Verdict:
         return Verdict.OK(auth_token)
     except Timeout as e:
         log.error(f'{e}, {print_exc()}')
-        return Verdict.DOWN("service not responding")
+        return down
     except Exception as e:
         log.error(f'{e}, {print_exc()}')
-        return Verdict.DOWN('cant create user')
+        return down
 
 
 @checker.define_get(vuln_num=1)
@@ -137,6 +145,9 @@ def get(get_request: GetRequest) -> Verdict:
 
         log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
 
+        if down_status_code(response):
+            return down
+
         if response.status_code != 200 or response.json()["credit_card_info"] != get_request.flag:
             return Verdict.CORRUPT('wrong flag')
 
@@ -147,6 +158,12 @@ def get(get_request: GetRequest) -> Verdict:
             timeout=3
         )
 
+        if down_status_code(response):
+            return down
+
+        if response.status_code != 200:
+            return mumble
+
         log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
 
         if response.json()["credit_card_info"] != get_request.flag:
@@ -155,7 +172,7 @@ def get(get_request: GetRequest) -> Verdict:
         return Verdict.OK()
     except Timeout as e:
         log.error(f'{e}, {print_exc()}')
-        return Verdict.DOWN("service not responding")
+        return down
     except Exception as e:
         log.error(f'{e}, {print_exc()}')
         return Verdict.CORRUPT("service can't give a flag")
@@ -221,10 +238,10 @@ def check(check_request: CheckRequest) -> Verdict:
         return Verdict.OK()
     except Timeout as e:
         log.error(f'{e}, {print_exc()}')
-        return Verdict.DOWN("service not responding")
+        return down
     except Exception as e:
         log.error(f'{e}, {print_exc()}')
-        return Verdict.DOWN('check failed')
+        return down
 
 
 def check_make_purchase(host, auth, ware_id):
@@ -238,6 +255,10 @@ def check_make_purchase(host, auth, ware_id):
             headers={'User-Agent': get_random_user_agent()},
             cookies={AUTH_COOKIE_NAME: auth}
         )
+
+        if down_status_code(response):
+            return down
+
         if response.status_code != 201:
             log.error("invalid status")
             return mumble
@@ -258,6 +279,10 @@ def check_make_purchase(host, auth, ware_id):
         cookies={AUTH_COOKIE_NAME: auth}
     )
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+
+    if down_status_code(response):
+        return down
+
     if response.status_code != 200:
         return mumble
 
@@ -297,6 +322,9 @@ def check_create_ware_and_my_wares_list(host, auth, uid):
     )
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
 
+    if down_status_code(response):
+        return None, down
+
     if response.status_code != 201:
         return None, mumble
 
@@ -311,6 +339,9 @@ def check_create_ware_and_my_wares_list(host, auth, uid):
         timeout=3
     )
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+
+    if down_status_code(response):
+        return None, down
 
     if response.status_code != 200 or response.json()["ids"] is None:
         return None, mumble
@@ -327,6 +358,9 @@ def check_create_ware_and_my_wares_list(host, auth, uid):
         timeout=3
     )
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+
+    if down_status_code(response):
+        return None, down
 
     if response.status_code != 200:
         return None, mumble
@@ -356,6 +390,9 @@ def check_users_list(host, auth1, auth2):
 
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
 
+    if down_status_code(response):
+        return down
+
     if response.status_code != 200 or response.json()["id"] is None:
         return mumble
 
@@ -369,6 +406,9 @@ def check_users_list(host, auth1, auth2):
     )
 
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+
+    if down_status_code(response):
+        return down
 
     if response.status_code != 200 or response.json()["id"] is None:
         return mumble
@@ -386,6 +426,9 @@ def check_users_list(host, auth1, auth2):
             cookies={AUTH_COOKIE_NAME: auth1},
             timeout=3
         )
+
+        if down_status_code(response):
+            return down
 
         if response.status_code != 200 or response.json()["users"] is None:
             return mumble
@@ -422,6 +465,9 @@ def check_auth(host, login, phash, auth):
         }
     )
 
+    if down_status_code(response):
+        return down
+
     if response.status_code != 200 or response.cookies[AUTH_COOKIE_NAME] != auth:
         return mumble
 
@@ -443,6 +489,9 @@ def check_create_user(host, login, password, password_hash, flag):
 
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
 
+    if down_status_code(response):
+        return None, None, down
+
     user_id = response.json()["id"]
     if response.status_code != 201 or user_id is None:
         log.error(f'unexpected code - {response.status_code}')
@@ -459,6 +508,9 @@ def check_create_user(host, login, password, password_hash, flag):
         headers={'User-Agent': get_random_user_agent()},
         cookies={AUTH_COOKIE_NAME: auth_token}
     )
+
+    if down_status_code(response):
+        return None, None, down
 
     if response.status_code != 200:
         return None, None, mumble
