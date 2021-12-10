@@ -19,10 +19,10 @@ variable "instance_prefix" {
 
 variable "main_resources" {
   default = {
-    cores = 2
-    memory = 4
-    core_fraction = 50
-    preemtible = true
+    cores = 4
+    memory = 8
+    core_fraction = 100
+    preemtible = false
   }
 }
 
