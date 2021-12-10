@@ -292,13 +292,15 @@ func (cp ControlPanel) CalculateStatistic() (*models.Statistic, error) {
 	for _, userToken := range *users {
 		user, err := cp.DB.GetUser(userToken)
 		if err != nil {
-			return nil, err
+			log.Error(err)
+			continue
 		}
 
 		for _, containerId := range user.ContainersIds {
 			container, err := cp.DB.GetContainer(userToken, containerId)
 			if err != nil {
-				return nil, err
+				log.Error(err)
+				continue
 			}
 
 			for _, item := range container.Items {

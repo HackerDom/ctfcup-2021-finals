@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 	"trash-factory/pkg/api"
 	"trash-factory/pkg/models"
@@ -74,11 +75,21 @@ func main() {
 	//v := Run(addr, command, data)
 	//fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
 	//fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
-	Test()
+	//log.SetLevel(log.ErrorLevel)
+	wg := sync.WaitGroup{}
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			for true {
+				Test()
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 func Test() {
-	adrr := "10.118.0.20:1104"
+	adrr := "10.118.103.11"
 	command := "check"
 	data := ""
 	v := Run(&adrr, &command, &data)
