@@ -89,6 +89,13 @@ mumble = Verdict.MUMBLE('wrong server response')
 down = Verdict.DOWN("service not responding")
 
 
+def host(host):
+    if host.find(':') != -1:
+        return host
+
+    return host + ':' + str(API_PORT)
+
+
 def down_status_code(response):
     return response.status_code == 502 or response.status_code == 503
 
@@ -103,7 +110,7 @@ def put(put_request: PutRequest) -> Verdict:
         log.debug(f'creating user {login} with password {password} ({password_hash})')
 
         response = get_session_with_retry().post(
-            f'http://{put_request.hostname}/api/users',
+            f'http://{host(put_request.hostname)}/api/users',
             headers={'User-Agent': get_random_user_agent()},
             json={
                 'login': login,
@@ -137,7 +144,7 @@ def put(put_request: PutRequest) -> Verdict:
 def get(get_request: GetRequest) -> Verdict:
     try:
         response = get_session_with_retry().get(
-            f'http://{get_request.hostname}/api/users',
+            f'http://{host(get_request.hostname)}/api/users',
             headers={"User-Agent": get_random_user_agent()},
             cookies={AUTH_COOKIE_NAME: get_request.flag_id},
             timeout=3
@@ -152,7 +159,7 @@ def get(get_request: GetRequest) -> Verdict:
             return Verdict.CORRUPT('wrong flag')
 
         response = get_session_with_retry().get(
-            f'http://{get_request.hostname}/api/users/{response.json()["id"]}',
+            f'http://{host(get_request.hostname)}/api/users/{response.json()["id"]}',
             headers={"User-Agent": get_random_user_agent()},
             cookies={AUTH_COOKIE_NAME: get_request.flag_id},
             timeout=3
@@ -191,45 +198,45 @@ def check(check_request: CheckRequest) -> Verdict:
         password_hash2 = get_sha256(password2)
         flag2 = generate_some_flag()
 
-        host = check_request.hostname
+        host_fixed = host(check_request.hostname)
 
-        uid1, auth1, verdict = check_create_user(host, login1, password1, password_hash1, flag1)
+        uid1, auth1, verdict = check_create_user(host_fixed, login1, password1, password_hash1, flag1)
         if verdict is not None:
             return verdict
 
-        uid2, auth2, verdict = check_create_user(host, login2, password2, password_hash2, flag2)
+        uid2, auth2, verdict = check_create_user(host_fixed, login2, password2, password_hash2, flag2)
         if verdict is not None:
             return verdict
 
-        verdict = check_auth(host, login1, password_hash1, auth1)
+        verdict = check_auth(host_fixed, login1, password_hash1, auth1)
         if verdict is not None:
             return verdict
 
-        verdict = check_auth(host, login1, password_hash1, auth1)
+        verdict = check_auth(host_fixed, login1, password_hash1, auth1)
         if verdict is not None:
             return verdict
 
-        verdict = check_auth(host, login2, password_hash2, auth2)
+        verdict = check_auth(host_fixed, login2, password_hash2, auth2)
         if verdict is not None:
             return verdict
 
-        verdict = check_users_list(host, auth1, auth2)
+        verdict = check_users_list(host_fixed, auth1, auth2)
         if verdict is not None:
             return verdict
 
-        ware_id1, verdict = check_create_ware_and_my_wares_list(host, auth1, uid1)
+        ware_id1, verdict = check_create_ware_and_my_wares_list(host_fixed, auth1, uid1)
         if verdict is not None:
             return verdict
 
-        ware_id2, verdict = check_create_ware_and_my_wares_list(host, auth2, uid2)
+        ware_id2, verdict = check_create_ware_and_my_wares_list(host_fixed, auth2, uid2)
         if verdict is not None:
             return verdict
 
-        verdict = check_make_purchase(host, auth1, ware_id2)
+        verdict = check_make_purchase(host_fixed, auth1, ware_id2)
         if verdict is not None:
             return verdict
 
-        verdict = check_make_purchase(host, auth2, ware_id1)
+        verdict = check_make_purchase(host_fixed, auth2, ware_id1)
         if verdict is not None:
             return verdict
 
