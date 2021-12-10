@@ -69,7 +69,7 @@ def get2(get_request: GetRequest) -> Verdict:
     print(get_request.flag_id)
     path = os.path.dirname(os.path.realpath(__file__))
     r = subprocess.Popen(
-        [f"{path}/cli", f"--addr={get_request.hostname}", "--command=put2", f"--data={get_request.flag_id[:-1]}"],
+        [f"{path}/cli", f"--addr={get_request.hostname}", "--command=get2", f"--data={get_request.flag_id[:-1]}"],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
     lines = r.stdout.readlines()
