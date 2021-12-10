@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"net"
+	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
@@ -66,14 +67,45 @@ func (e Endpoints) GetWebUrl() string {
 }
 
 func main() {
-	//
 	rand.Seed(time.Now().UnixMilli())
-	adrr := flag.String("addr", "", "backend url")
+	addr := flag.String("addr", "", "backend url")
 	command := flag.String("command", "", "command : check, put1, put2, get1, get2")
 	data := flag.String("data", "", "data string")
 	flag.Parse()
 
-	v := Run(adrr, command, data)
+	v := Run(addr, command, data)
+	fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
+	fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
+	//Test()
+}
+
+func Test() {
+	adrr := "10.118.0.20:1104"
+	command := "check"
+	data := ""
+	v := Run(&adrr, &command, &data)
+	fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
+	fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
+
+	command = "put1"
+	data = "flag"
+	v = Run(&adrr, &command, &data)
+	fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
+	fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
+
+	command = "get1"
+	v = Run(&adrr, &command, &v.Reason)
+	fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
+	fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
+
+	command = "put2"
+	data = "flag"
+	v = Run(&adrr, &command, &data)
+	fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
+	fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
+
+	command = "get2"
+	v = Run(&adrr, &command, &v.Reason)
 	fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
 	fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
 }
@@ -297,30 +329,53 @@ func Get_Item(e *Endpoints, tokenKey string, token string, containerId, flag str
 }
 
 func CreateUser(addr string) (string, string, error) {
+	for i := 0; i < 5; i++ {
+		key, token, err := CreateUserBase(addr)
+		if err == nil {
+			return key, token, err
+		} else {
+			log.Error(err)
+		}
+	}
+	return "", "", error(NewVerdict(MUMBLE, "Can't register user"))
+}
+
+func CreateUserBase(addr string) (string, string, error) {
 	var tokenKey string
 	var token string
 	c := colly.NewCollector()
+	c.AllowURLRevisit = true
+	c.WithTransport(&http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 10 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	})
 
-	var lastE *colly.HTMLElement
-	// Find and visit all links
 	c.OnHTML("a[href=\"/token\"]", func(e *colly.HTMLElement) {
 		err := e.Request.Visit(e.Attr("href"))
 		if err != nil {
+			log.Error(err)
 			return
 		}
 	})
 
 	c.OnHTML("div[class=\"token-info\"]", func(e *colly.HTMLElement) {
-		lastE = e
 		keyPattern := regexp.MustCompile("TOKEN KEY: (.*)")
 		tokkenPattern := regexp.MustCompile("TOKEN: (.*)")
 		r := keyPattern.FindStringSubmatch(e.Text)
 		if r != nil {
 			tokenKey = r[1]
-			r = tokkenPattern.FindStringSubmatch(e.Text)
-			if r != nil {
-				token = r[1]
-			}
+		}
+		r = tokkenPattern.FindStringSubmatch(e.Text)
+		if r != nil {
+			token = r[1]
 		}
 	})
 
@@ -328,7 +383,6 @@ func CreateUser(addr string) (string, string, error) {
 
 	if tokenKey == "" || token == "" {
 		log.Error(fmt.Sprintf("%s. Key %s Token %s", "Can't parse user", tokenKey, token))
-		log.Error(lastE.Text)
 		return "", "", error(NewVerdict(MUMBLE, "Can't register user"))
 	}
 
