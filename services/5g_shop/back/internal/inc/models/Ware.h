@@ -8,13 +8,14 @@
 namespace shop {
     class Ware {
     public:
-        Ware(int id, int sellerId, std::string title, std::string description, int price, int serviceFee)
+        Ware(int id, int sellerId, std::string title, std::string description, int price, int serviceFee, int imageId)
                 : id(id),
                   sellerId(sellerId),
                   title(std::move(title)),
                   description(std::move(description)),
                   price(price),
-                  serviceFee(serviceFee) {
+                  serviceFee(serviceFee),
+                  imageId(imageId) {
         }
 
         const int id;
@@ -23,6 +24,7 @@ namespace shop {
         const std::string description;
         const int price;
         const int serviceFee;
+        const int imageId;
 
         static std::shared_ptr<Ware> ReadFromPGResult(PGresult *result, int rowNum = 0) {
             auto idCol = PQfnumber(result, "id");
@@ -31,8 +33,10 @@ namespace shop {
             auto descriptionCol = PQfnumber(result, "description");
             auto priceCol = PQfnumber(result, "price");
             auto serviceFeeCol = PQfnumber(result, "service_fee");
+            auto imageIdCol = PQfnumber(result, "image_id");
 
-            if (sellerIdCol == -1 || titleCol == -1 || descriptionCol == -1 || priceCol == -1) {
+            if (sellerIdCol == -1 || titleCol == -1 || descriptionCol == -1 || priceCol == -1 || idCol == -1
+                || serviceFeeCol == -1 || imageIdCol == -1) {
                 throw std::runtime_error("unexpected pg result to read ware");
             }
 
@@ -42,7 +46,8 @@ namespace shop {
                     std::string(PQgetvalue(result, rowNum, titleCol)),
                     std::string(PQgetvalue(result, rowNum, descriptionCol)),
                     std::stoi(std::string(PQgetvalue(result, rowNum, priceCol))),
-                    std::stoi(std::string(PQgetvalue(result, rowNum, serviceFeeCol)))
+                    std::stoi(std::string(PQgetvalue(result, rowNum, serviceFeeCol))),
+                    std::stoi(std::string(PQgetvalue(result, rowNum, imageIdCol)))
             );
         }
 

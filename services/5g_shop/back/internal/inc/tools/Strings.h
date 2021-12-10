@@ -13,8 +13,16 @@ namespace shop {
 
     int GetIntEnv(const char *name);
 
+    std::vector<std::string> Split(const std::string &s, const std::string &delimiter);
+
+    std::string &Ltrim(std::string &s);
+
+    std::string &Rtrim(std::string &s);
+
+    std::string &Trim(std::string &s);
+
     template<typename ... Args>
-    std::string format(const char *format, Args ... args) {
+    std::string Format(const char *format, Args ... args) {
         int sizeS = std::snprintf(nullptr, 0, format, args ...) + 1;
         if (sizeS <= 0) {
             throw std::runtime_error("Error during formatting.");

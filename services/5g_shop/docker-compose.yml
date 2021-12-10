@@ -11,6 +11,7 @@ services:
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
       - postgres-data:/var/lib/postgresql/data
+      - images-data:/var/www
     networks:
       - app-network
 
@@ -20,6 +21,8 @@ services:
       context: .
       dockerfile: ./docker/gateway/Dockerfile
     tty: true
+    volumes:
+      - images-data:/var/www
     depends_on:
       - shop
     ports:
@@ -37,10 +40,8 @@ services:
       - "postgres:postgres"
     env_file:
       - variables.env
-    ulimits:
-      nofile:
-        soft: 26677
-        hard: 46677
+    volumes:
+      - images-data:/var/www
     networks:
       - app-network
 
@@ -50,4 +51,5 @@ networks:
 
 volumes:
   postgres-data:
+  images-data:
 

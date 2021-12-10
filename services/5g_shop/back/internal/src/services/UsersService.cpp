@@ -27,7 +27,7 @@ UsersService::Create(const std::string &login, const std::string &passwordHash, 
     auto guard = connectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
-    auto query = format(
+    auto query = Format(
             HiddenStr("insert into users values (default, '%s', default, '%s', '%s', '%s', %d) returning *;"),
             login.c_str(),
             passwordHash.c_str(),
@@ -59,8 +59,8 @@ Result<std::shared_ptr<User>> UsersService::FindByAuthCookie(const std::string &
     auto guard = connectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
-    auto query = format(
-            HiddenStr("select * from users where auth_cookie='%s'"),
+    auto query = Format(
+            HiddenStr("select * from users where auth_cookie='%s';"),
             authCookie.c_str()
     );
 
@@ -84,7 +84,7 @@ UsersService::FindByLoginAndPassword(const std::string &login, const std::string
     auto guard = connectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
-    auto query = format(
+    auto query = Format(
             HiddenStr("select * from users where login='%s' and password_hash='%s'"),
             login.c_str(),
             passwordHash.c_str()
@@ -109,7 +109,7 @@ Result<std::shared_ptr<User>> UsersService::GetById(int id) {
     auto guard = connectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
-    auto query = format(HiddenStr("select * from users where id=%d"), id);
+    auto query = Format(HiddenStr("select * from users where id=%d"), id);
 
     result = PQexec(conn, query.c_str());
 
@@ -140,7 +140,7 @@ Result<std::vector<std::shared_ptr<User>>> UsersService::List(int pageNum, int p
     auto guard = connectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
-    auto query = format(HiddenStr("select * from users limit %d offset %d;"), pageSize, pageNum * pageSize);
+    auto query = Format(HiddenStr("select * from users limit %d offset %d;"), pageSize, pageNum * pageSize);
 
     result = PQexec(conn, query.c_str());
 

@@ -27,7 +27,7 @@ clean: clean_objects
 clean_objects:
 	rm -rf *.o
 
-$(EXECUTABLE): main.o CommandLineParser.o Defer.o PGConnection.o PGConnectionPool.o UsersService.o WaresService.o PurchasesService.o Strings.o UUID.o Calc.o
+$(EXECUTABLE): main.o CommandLineParser.o Defer.o PGConnection.o PGConnectionPool.o UsersService.o WaresService.o PurchasesService.o Strings.o UUID.o Calc.o ImagesService.o ShopService.o SHA256.o
 	$(LINK_EXECUTABLE)
 
 main.o: $(SRC_DIR)/main.cpp
@@ -61,4 +61,13 @@ UUID.o: $(SRC_DIR)/tools/UUID.cpp $(INC_DIR)/tools/UUID.h
 	$(COMPILE_CXX_SRC)
 
 Calc.o: $(SRC_DIR)/money/Calc.cpp $(INC_DIR)/money/Calc.h
+	$(COMPILE_CXX_SRC)
+
+ImagesService.o: $(SRC_DIR)/services/ImagesService.cpp $(INC_DIR)/services/ImagesService.h
+	$(COMPILE_CXX_SRC)
+
+ShopService.o: $(SRC_DIR)/services/ShopService.cpp $(INC_DIR)/services/ShopService.h
+	$(COMPILE_CXX_SRC)
+
+SHA256.o: $(SRC_DIR)/tools/SHA256.cpp $(INC_DIR)/tools/SHA256.h
 	$(COMPILE_CXX_SRC)
