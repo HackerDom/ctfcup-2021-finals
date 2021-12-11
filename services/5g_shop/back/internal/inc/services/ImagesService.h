@@ -14,7 +14,9 @@ namespace shop {
 
         Result<std::shared_ptr<Image>> FindBySha256(const std::string &sha256);
 
-        Result<std::shared_ptr<Image>> Create(int ownerId, const std::string &filename, const std::string &sha256);
+        Result<std::shared_ptr<Image>> FindAnyWithFilename(const std::string &filename);
+
+        Result<std::shared_ptr<Image>> Create(int ownerId, const std::string &filename);
 
         Result<std::vector<std::shared_ptr<Image>>> ListOfUser(int ownerId);
 

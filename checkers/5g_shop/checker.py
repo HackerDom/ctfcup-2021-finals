@@ -294,7 +294,9 @@ def check_upload_image(host, auth):
         return None, mumble
 
     response = get_session_with_retry().get(
-        f'http://{host}{path}'
+        f'http://{host}{path}',
+        headers={'User-Agent': get_random_user_agent()},
+        cookies={AUTH_COOKIE_NAME: auth},
     )
     if down_status_code(response):
         return None, down

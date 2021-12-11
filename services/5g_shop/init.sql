@@ -26,7 +26,8 @@ create table if not exists public.images(
 );
 
 create index if not exists images_owner_id_index on public.images(owner_id);
-create index if not exists image_sha256_index on public.images(sha256);
+create index if not exists images_sha256_index on public.images(sha256);
+create index if not exists images_filename_index on public.images(filename);
 
 
 create table if not exists public.wares(

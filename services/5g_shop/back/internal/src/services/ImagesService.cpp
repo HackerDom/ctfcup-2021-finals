@@ -60,7 +60,7 @@ Result<std::shared_ptr<Image>> ImagesService::FindBySha256(const std::string &sh
 }
 
 
-Result<std::shared_ptr<Image>> ImagesService::Create(int ownerId, const std::string &filename, const std::string &sha256) {
+Result<std::shared_ptr<Image>> ImagesService::Create(int ownerId, const std::string &filename) {
     Defer defer;
 
     PGresult *result = nullptr;
@@ -72,10 +72,10 @@ Result<std::shared_ptr<Image>> ImagesService::Create(int ownerId, const std::str
     auto conn = guard.connection->Connection().get();
 
     auto query = Format(
-            HiddenStr("insert into images values (default, %d, '%s', '%s') returning *;"),
+            HiddenStr("insert into images values (default, %d, '%s', encode(sha256(pg_read_binary_file('%s', 0, 10000000)), 'hex')) returning *;"),
             ownerId,
             filename.c_str(),
-            sha256.c_str()
+            ("./" + filename.substr(16)).c_str()
     );
 
     result = PQexec(conn, query.c_str());
@@ -125,4 +125,26 @@ Result<std::vector<std::shared_ptr<Image>>> ImagesService::ListOfUser(int ownerI
     }
 
     return Result<std::vector<std::shared_ptr<Image>>>::ofSuccess(wares);
+}
+
+Result<std::shared_ptr<Image>> ImagesService::FindAnyWithFilename(const std::string &filename) {
+    Defer defer;
+
+    PGresult *result = nullptr;
+    defer([&result] {
+        PQclear(result);
+    });
+
+    auto guard = pgConnectionPool->Guarded();
+    auto conn = guard.connection->Connection().get();
+
+    auto query = Format(HiddenStr("select * from images where filename='%s' limit 1;"), filename.c_str());
+
+    result = PQexec(conn, query.c_str());
+
+    if (PQresultStatus(result) != PGRES_TUPLES_OK || PQntuples(result) != 1) {
+        return Result<std::shared_ptr<Image>>::ofError();
+    }
+
+    return Result<std::shared_ptr<Image>>::ofSuccess(Image::ReadFromPGResult(result));
 }

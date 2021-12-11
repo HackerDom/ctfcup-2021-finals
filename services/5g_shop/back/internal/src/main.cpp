@@ -1,6 +1,7 @@
 #include <iostream>
 #include <random>
 #include <fstream>
+#include <algorithm>
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -418,9 +419,11 @@ response UploadImage(::App &app, const request &req, ShopService &shop) {
     }
 
     Trim(filename);
+    std::replace(filename.begin(), filename.end(), '/', '_');
+    std::replace(filename.begin(), filename.end(), ' ', '_');
 
-    if (filename.empty()) {
-        return response(status::BAD_REQUEST);
+    if (filename.empty() || part.body.size() > 5 * 1024 * 1024) {
+        return response(status::BAD_REQUEST, "invalid filename or file is too large");
     }
 
     auto filecontent = part.body.c_str();
@@ -433,8 +436,7 @@ response UploadImage(::App &app, const request &req, ShopService &shop) {
     Result<std::shared_ptr<Image>> bySha256 = imagesService->FindBySha256(sha256);
 
     if (bySha256.success) {
-        Result<std::shared_ptr<Image>> image = imagesService->Create(userAuth.value->id, bySha256.value->filename,
-                                                                     sha256);
+        Result<std::shared_ptr<Image>> image = imagesService->Create(userAuth.value->id, bySha256.value->filename);
 
         if (!image.success) {
             return {status::INTERNAL_SERVER_ERROR, image.message};
@@ -449,14 +451,8 @@ response UploadImage(::App &app, const request &req, ShopService &shop) {
         return {status::CREATED, data};
     }
 
-    filename = GenerateFileName("/var/www/" + filename);
-    auto path = "/" + filename.substr(9);
-
-    Result<std::shared_ptr<Image>> image = imagesService->Create(userAuth.value->id, path, sha256);
-
-    if (!image.success) {
-        return {status::INTERNAL_SERVER_ERROR, image.message};
-    }
+    filename = GenerateFileName("/images/" + filename);
+    auto path = "/api/images/get/" + filename.substr(8);
 
     std::ofstream file(filename, std::ios_base::out | std::ios_base::binary);
 
@@ -467,6 +463,12 @@ response UploadImage(::App &app, const request &req, ShopService &shop) {
     file.write(filecontent, static_cast<long>(part.body.size()));
 
     file.close();
+
+    Result<std::shared_ptr<Image>> image = imagesService->Create(userAuth.value->id, path);
+
+    if (!image.success) {
+        return {status::INTERNAL_SERVER_ERROR, image.message};
+    }
 
     json::wvalue data(
             {
@@ -545,7 +547,6 @@ response GetMyImages(::App &app, const request &req, ShopService &shop) {
 
     return {status::OK, data};
 }
-
 
 int main(int argc, char **argv, char **env) {
     try {
@@ -636,20 +637,52 @@ int main(int argc, char **argv, char **env) {
                     return GetImage(app, req, shopService, id);
                 });
 
-        app
-                .server_name("5G shop backend")
-                .bindaddr(args.address)
-                .port(args.port)
-                .concurrency(std::thread::hardware_concurrency() - 1)
-                .run();
+        CROW_ROUTE(app, "/api/images/get/<string>")(
+            [&app, &shopService](const request &req, response &res, std::string) {
+                auto usersService = shopService.usersService;
+                auto imagesService = shopService.imagesService;
+                auto &ctx = app.get_context<CookieParser>(req);
+                auto authCookie = ctx.get_cookie(AuthCookieName);
 
-    } catch (std::exception &e) {
-        CROW_LOG_CRITICAL << "Unhandled exception: " << e.what();
+                if (authCookie.empty()) {
+                    res.code = status::UNAUTHORIZED;
+                    res.end();
+                }
 
-        return EXIT_FAILURE;
-    } catch (...) {
-        CROW_LOG_CRITICAL << "Unknown unhandled exception occurred";
+                auto userAuth = usersService->FindByAuthCookie(authCookie);
 
-        return EXIT_FAILURE;
+                if (!userAuth.success) {
+                    res.code = status::UNAUTHORIZED;
+                    res.end();
+                }
+
+                auto file = imagesService->FindAnyWithFilename(req.url);
+
+                if (!file.success) {
+                    res.code = status::NOT_FOUND;
+                    res.end();
+                }
+
+                res.set_static_file_info("/images/" + file.value->filename.substr(16));
+                res.end();
+            });
+
+
+            app
+                    .server_name("5G shop backend")
+                    .bindaddr(args.address)
+                    .port(args.port)
+                    .concurrency(std::thread::hardware_concurrency() - 1)
+                    .run();
+
+        } catch (std::exception & e)
+        {
+            CROW_LOG_CRITICAL << "Unhandled exception: " << e.what();
+
+            return EXIT_FAILURE;
+        } catch (...) {
+            CROW_LOG_CRITICAL << "Unknown unhandled exception occurred";
+
+            return EXIT_FAILURE;
+        }
     }
-}

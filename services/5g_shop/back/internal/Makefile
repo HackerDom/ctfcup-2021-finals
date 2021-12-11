@@ -13,7 +13,7 @@ INCLUDES=-I$(INC_DIR) -I/usr/include/postgresql/
 COMPILER_FLAGS=-DBOOST_LOG_DYN_LINK
 
 CXXFLAGS=$(WARN_OPTS) $(INCLUDES) $(COMPILER_FLAGS) \
-		-std=c++20 -g -O0
+		-std=c++2a -g -O0
 
 LINK_EXECUTABLE=$(LD) $(LDFLAGS) -o $@ $^
 
