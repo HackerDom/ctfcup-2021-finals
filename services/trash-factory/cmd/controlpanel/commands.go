@@ -160,9 +160,32 @@ func (cp *ControlPanel) CreateUser(tokenKey string, opBytes []byte) ([]byte, err
 		TokenKey:      op.TokenKey,
 		Token:         op.Token,
 		ContainersIds: make([]string, 0),
+		Description:   "",
 	}
 
 	err = cp.DB.SaveUser(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (cp *ControlPanel) SetDescription(tokenKey string, opBytes []byte) ([]byte, error) {
+	op, err := commands.DeserializeSetDescriptionOp(opBytes)
+
+	if tokenKey != cp.AdminCredentials.TokenKey {
+		return nil, errors.New("Forbidden")
+	}
+
+	user, err := cp.DB.GetUser(op.TokenKey)
+	if err != nil {
+		return nil, err
+	}
+
+	user.Description = op.Description
+
+	err = cp.DB.SaveUser(user)
 	if err != nil {
 		return nil, err
 	}
