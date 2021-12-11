@@ -75,20 +75,27 @@ func main() {
 	//v := Run(addr, command, data)
 	//fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
 	//fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
-	//log.SetLevel(log.ErrorLevel)
-	wg := sync.WaitGroup{}
-	for i := 0; i < 20; i++ {
-		wg.Add(1)
+	log.SetLevel(log.ErrorLevel)
+	for i := 0; i < 75; i++ {
 		go func() {
 			for true {
-				Test()
+				wg := sync.WaitGroup{}
+				wg.Add(1)
+				go Test(&wg)
+				wg.Wait()
 			}
 		}()
 	}
-	wg.Wait()
+	time.Sleep(3 * time.Minute)
 }
 
-func Test() {
+func Test(wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+
+		}
+	}()
 	adrr := "10.118.103.11"
 	command := "check"
 	data := ""
