@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 	"trash-factory/pkg/commands"
@@ -236,7 +237,7 @@ func (cp *ControlPanel) CreateContainer(tokenKey string, opBytes []byte) ([]byte
 		return nil, err
 	}
 	container := models.Container{
-		ID:          string(rune(count + 1)),
+		ID:          strconv.Itoa(count + 1),
 		Size:        op.Size,
 		Description: op.Description,
 	}
