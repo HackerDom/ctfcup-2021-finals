@@ -175,7 +175,6 @@ func HackPT(addr string) error {
 			if err != nil {
 				log.Warn("Can't get for " + user.TokenKey)
 				continue
-				//return err
 			}
 			for _, item := range container.Items {
 				if item.Description == "secret" {
@@ -199,7 +198,8 @@ func Test() {
 
 	command = "put1"
 	data = "flag"
-	v = Run(&adrr, &command, &data)
+	fl1 := "flag1"
+	v = Run(&adrr, &command, &fl1)
 	fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
 	fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
 
@@ -242,11 +242,11 @@ func Run(adrr *string, command *string, data *string) Verdict {
 		}
 		return Verdict{
 			Code:   OK,
-			Reason: fmt.Sprintf("%s:%s", tokenKey, token),
+			Reason: fmt.Sprintf("%s:%s:%s", tokenKey, token, *data),
 		}
 	case "get1":
 		parts := strings.Split(*data, ":")
-		err := Get_User(&endpoint, parts[0], parts[1])
+		err := Get_User(&endpoint, parts[0], parts[1], parts[2])
 		verdict, failed := EnsureSuccess(err)
 		if failed {
 			return verdict
@@ -434,16 +434,15 @@ func Put_User(endpoints *Endpoints, flag string) (string, string, error) {
 	return tokenKey, token, err
 }
 
-func Get_User(e *Endpoints, tokenKey string, token string) error {
+func Get_User(e *Endpoints, tokenKey string, token string, flag string) error {
 	log.Info("Try Get User")
 	client := api.NewClient(e.GetCPUrl(), tokenKey, token)
 	user, err := client.GetUser(tokenKey)
-
 	if err != nil {
 		return err
 	}
-	tokenBytes, err := hex.DecodeString(token)
-	if user.TokenKey != tokenKey || string(user.Token) != string(tokenBytes) {
+
+	if user.Description != flag {
 		return error(NewVerdict(CORRUPT, "Flag corrupted"))
 	}
 	log.Info("Get User OK")
