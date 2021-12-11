@@ -16,7 +16,7 @@ services:
     restart: always
     depends_on:
       - controlpanel
-    mem_limit: 1G
+    mem_limit: 3G
     pids_limit: 1000
 
   controlpanel:
@@ -31,5 +31,5 @@ services:
     volumes:
       - ./data:/db
     restart: always
-    mem_limit: 1G
+    mem_limit: 3G
     pids_limit: 1000

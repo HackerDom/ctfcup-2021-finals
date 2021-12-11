@@ -1,4 +1,8 @@
 gradle:7.1.0-jdk16
 openjdk:16-jdk-alpine
+postgres:13.2-alpine
 postgres:14.1-alpine
 postgres:latest
+ubuntu:20.04
+nginx:1.21.0-alpine
+golang:1.17.3-alpine3.15

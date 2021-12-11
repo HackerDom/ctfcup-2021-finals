@@ -2,7 +2,7 @@ version: "3"
 
 services:
   postgres:
-    image: postgres:13.2-alpine
+    image: cr.yandex/crp649c8570akro5vmp6/postgres:13.2-alpine
     restart: always
     environment:
       POSTGRES_USER: postgres

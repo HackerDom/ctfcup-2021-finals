@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM cr.yandex/crp649c8570akro5vmp6/ubuntu:20.04
 
 RUN apt update \
     && apt install -y \
