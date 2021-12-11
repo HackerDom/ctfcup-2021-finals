@@ -35,18 +35,18 @@ cs_ctf_name: CTFCup 2021 final
 cs_flags_secret: 2d61d007403d7766f62815b6bfb14184dbd12d2a
 cs_round_length: 60
 cs_flag_life_time: 12
-cs_time: "['2021-12-04 00:00:00', '2021-12-11 23:59:00']"
-#cs_time: "['2019-10-15 10:00:00', '2019-10-15 17:00:00'], ['2019-10-16 10:00:00', '2019-10-16 17:00:00'], ['2019-10-17 07:59:59', '2019-10-17 15:59:00']"
+cs_time: "['2021-12-04 00:00:00', '2021-12-12 23:59:00']"
+#cs_time: "['2021-12-12 07:00:00', '2021-12-12 10:59:00']"
 
 
 cs_checkers_hostname_cb: |
   sub { my ($team, $service) = @_; "10.118.0.20:$service->{port_prefix}$team->{team_id}" }
 
 teams: |
-  {name => 'Команда Лучкиных Вячеславов', network => '10.118.101.0/24', host => '10.118.101.0', team_id => '101', token => '961bad80437d6140ce70', logo => '/data/logos/101'},
-  {name => 'C4T BuT S4D', network => '10.118.102.0/24', host => '10.118.102.0', team_id => '102', token => 'cab4496c1e740638b49d', logo => '/data/logos/102'},
-  {name => 'SPRUSH', network => '10.118.103.0/24', host => '10.118.103.0', team_id => '103', token => 'f6026a06def986fde14c', logo => '/data/logos/103'},
-  {name => '♿️🅵🅰️🅺🅰️🅿️🅿️🅰️♿️', network => '10.118.104.0/24', host => '10.118.104.0', team_id => '104', token => '8d705220eefea5d7a157', logo => '/data/logos/104'},
+  {name => 'C4T BuT S4D', network => '10.118.101.0/24', host => '10.118.101.0', team_id => '101', token => '961bad80437d6140ce70', logo => '/data/logos/101'},
+  {name => 's3qu3nc3', network => '10.118.102.0/24', host => '10.118.102.0', team_id => '102', token => 'cab4496c1e740638b49d', logo => '/data/logos/102'},
+  {name => 'FaKappa', network => '10.118.103.0/24', host => '10.118.103.0', team_id => '103', token => 'f6026a06def986fde14c', logo => '/data/logos/103'},
+  {name => 'SPRUSH', network => '10.118.104.0/24', host => '10.118.104.0', team_id => '104', token => '8d705220eefea5d7a157', logo => '/data/logos/104'},
 
 
 services: |
