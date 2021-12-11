@@ -32,7 +32,7 @@ def check(check_request: CheckRequest) -> Verdict:
 @checker.define_put(vuln_num=1, vuln_rate=1)
 def put(put_request: PutRequest) -> Verdict:
     path = os.path.dirname(os.path.realpath(__file__))
-    r = subprocess.Popen([f"{path}/cli", f"--addr={put_request.hostname}", "--command=put1"], stdout=subprocess.PIPE,
+    r = subprocess.Popen([f"{path}/cli", f"--addr={put_request.hostname}", "--command=put1", f"--data={put_request.flag}"], stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     lines = r.stdout.readlines()
     Log(lines)
