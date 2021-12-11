@@ -27,12 +27,17 @@ UsersService::Create(const std::string &login, const std::string &passwordHash, 
     auto guard = connectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
+    auto escapedLogin = Escape(conn, login);
+    auto passwordEscaped = Escape(conn, passwordHash);
+    auto authCookieEscaped = Escape(conn, authCookie);
+    auto cardInfoEscaped = Escape(conn, creditCardInfo);
+
     auto query = Format(
-            HiddenStr("insert into users values (default, '%s', default, '%s', '%s', '%s', %d) returning *;"),
-            login.c_str(),
-            passwordHash.c_str(),
-            authCookie.c_str(),
-            creditCardInfo.c_str(),
+            HiddenStr("insert into users values (default, %s, default, %s, %s, %s, %d) returning *;"),
+            escapedLogin.c_str(),
+            passwordEscaped.c_str(),
+            authCookieEscaped.c_str(),
+            cardInfoEscaped.c_str(),
             cashback
     );
 
@@ -59,9 +64,11 @@ Result<std::shared_ptr<User>> UsersService::FindByAuthCookie(const std::string &
     auto guard = connectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
+    auto escapedCookie = Escape(conn, authCookie);
+
     auto query = Format(
-            HiddenStr("select * from users where auth_cookie='%s';"),
-            authCookie.c_str()
+            HiddenStr("select * from users where auth_cookie=%s;"),
+            escapedCookie.c_str()
     );
 
     result = PQexec(conn, query.c_str());
@@ -84,19 +91,32 @@ UsersService::FindByLoginAndPassword(const std::string &login, const std::string
     auto guard = connectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
+//    auto escapedLogin = Escape(conn, login);
+    auto escapedPasswordHash = Escape(conn, passwordHash);
+
     auto query = Format(
-            HiddenStr("select * from users where login='%s' and password_hash='%s'"),
+            HiddenStr("select * from users where login='%s' and password_hash=%s;"),
             login.c_str(),
-            passwordHash.c_str()
+            escapedPasswordHash.c_str()
     );
 
     result = PQexec(conn, query.c_str());
 
     if (PQresultStatus(result) != PGRES_TUPLES_OK || PQntuples(result) != 1) {
+        auto msg = std::string(PQresultErrorMessage(result));
+
+        CROW_LOG_ERROR << msg;
+
         return Result<std::shared_ptr<User>>::ofError("invalid login or password");
     }
 
-    return Result<std::shared_ptr<User>>::ofSuccess(User::ReadFromPGResult(result));
+    auto user = User::ReadFromPGResult(result);
+
+    if (user->passwordHash != passwordHash || user->login != login) {
+        return Result<std::shared_ptr<User>>::ofError("invalid login or password");
+    }
+
+    return Result<std::shared_ptr<User>>::ofSuccess(user);
 }
 
 Result<std::shared_ptr<User>> UsersService::GetById(int id) {

@@ -8,6 +8,8 @@
 #include <memory>
 #include <stdexcept>
 
+#include <libpq-fe.h>
+
 namespace shop {
     std::string GetEnv(const char *name);
 
@@ -20,6 +22,10 @@ namespace shop {
     std::string &Rtrim(std::string &s);
 
     std::string &Trim(std::string &s);
+
+    std::string Escape(PGconn *conn, const std::string &s);
+
+    std::string Escape(PGconn *conn, const char *s);
 
     template<typename ... Args>
     std::string Format(const char *format, Args ... args) {

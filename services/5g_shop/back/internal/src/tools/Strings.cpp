@@ -52,3 +52,13 @@ std::string &shop::Rtrim(std::string &s) {
 std::string &shop::Trim(std::string &s) {
     return Ltrim(Rtrim(s));
 }
+
+std::string shop::Escape(PGconn *conn, const std::string &s) {
+    char *escapedPtr = PQescapeLiteral(conn, s.c_str(), s.size());
+
+    std::string copy(escapedPtr);
+
+    PQfreemem(escapedPtr);
+
+    return copy;
+}
