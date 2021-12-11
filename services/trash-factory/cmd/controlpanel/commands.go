@@ -8,6 +8,8 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"strconv"
+	"sync"
 	"time"
 	"trash-factory/pkg/commands"
 	"trash-factory/pkg/crypto"
@@ -33,7 +35,6 @@ func NewControlPanel() *ControlPanel {
 		commands.GetItem:          cp.GetItem,
 		commands.CreateUser:       cp.CreateUser,
 		commands.GetUser:          cp.GetUser,
-		commands.ListUsers:        cp.ListUsers,
 		commands.GetStatistic:     cp.GetStatistic,
 	}
 	cp.DB = NewDataBase()
@@ -127,22 +128,6 @@ func (cp *ControlPanel) ListContainers(tokenKey string, opBytes []byte) ([]byte,
 	for _, id := range containersIds {
 		writer.WriteString(id)
 	}
-	return writer.GetBytes(), nil
-}
-
-func (cp *ControlPanel) ListUsers(tokenKey string, opBytes []byte) ([]byte, error) {
-	users, err := cp.DB.GetAllUsers()
-	if err != nil {
-		return nil, err
-	}
-
-	writer := serializeb.NewWriter()
-
-	writer.WriteArraySize(len(*users))
-	for _, user := range *users {
-		writer.WriteString(user)
-	}
-
 	return writer.GetBytes(), nil
 }
 
@@ -244,9 +229,15 @@ func (cp *ControlPanel) CreateContainer(tokenKey string, opBytes []byte) ([]byte
 		return nil, errors.New("incorrect container size")
 	}
 
-	fmt.Println(op.Description)
+	mu := sync.Mutex{}
+	mu.Lock()
+	defer mu.Unlock()
+	count, err := cp.DB.GetContainersCount(tokenKey)
+	if err != nil {
+		return nil, err
+	}
 	container := models.Container{
-		ID:          fmt.Sprintf("%08x", rand.Uint64()),
+		ID:          strconv.Itoa(count + 1),
 		Size:        op.Size,
 		Description: op.Description,
 	}
