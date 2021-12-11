@@ -8,6 +8,7 @@ type User struct {
 	TokenKey      string
 	Token         []byte
 	ContainersIds []string
+	Description   string
 }
 
 func (user *User) Serialize() []byte {
@@ -23,6 +24,7 @@ func (user *User) SerializeNext(writer *serializeb.Writer) {
 	for _, id := range user.ContainersIds {
 		writer.WriteString(id)
 	}
+	writer.WriteString(user.Description)
 }
 
 func DeserializeUser(buf []byte) (User, error) {
@@ -53,9 +55,14 @@ func DeserializeNextUser(reader serializeb.Reader) (User, error) {
 		}
 	}
 
+	description, err := reader.ReadString()
+	if err != nil {
+		return User{}, err
+	}
 	return User{
 		TokenKey:      tokenKey,
 		Token:         token,
 		ContainersIds: containersIds,
+		Description:   description,
 	}, nil
 }
