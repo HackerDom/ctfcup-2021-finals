@@ -17,7 +17,7 @@ services:
     depends_on:
       - controlpanel
     mem_limit: 1G
-    pids_limit: 10
+    pids_limit: 1000
 
   controlpanel:
     build:
@@ -32,4 +32,4 @@ services:
       - ./data:/db
     restart: always
     mem_limit: 1G
-    pids_limit: 10
+    pids_limit: 1000
