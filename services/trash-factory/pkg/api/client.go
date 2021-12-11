@@ -216,6 +216,86 @@ func (client *Client) GetUser(tokenKey string) (*models.User, error) {
 	return &user, nil
 }
 
+func (client *Client) CreateContainer(size int, description string) (string, error) {
+	msg := []byte{commands.ContainerCreate}
+	createContainerOp := commands.CreateContainerOp{
+		Size:        uint8(size),
+		Description: description,
+	}
+	msg = append(msg, createContainerOp.Serialize()...)
+	response, err := client.sendMessage(msg)
+	if err != nil {
+		return "", err
+	}
+	if response.statusCode != '\x00' {
+		return "", errors.New(fmt.Sprintf("cant create container: %02x", response.statusCode))
+	}
+	return string(response.decryptedPayload), nil
+}
+
+func (client *Client) GetContainerInfo(containerID string) (models.Container, error) {
+	msg := []byte{commands.GetContainerInfo}
+	getContainerInfoOp := commands.GetContainerInfoOp{
+		ContainerID: containerID,
+	}
+	msg = append(msg, getContainerInfoOp.Serialize()...)
+	response, err := client.sendMessage(msg)
+	if err != nil {
+		return models.Container{}, err
+	}
+	if response.statusCode != '\x00' {
+		return models.Container{}, errors.New(fmt.Sprintf("cant get container: %02x", response.statusCode))
+	}
+
+	container, err := models.DeserializeContainer(response.decryptedPayload)
+	if err != nil {
+		return models.Container{}, err
+	}
+
+	return container, nil
+}
+
+func (client *Client) PutItem(item models.Item, containerId string) error {
+	msg := []byte{commands.PutItem}
+	putItemOp := commands.PutItemOp{
+		Item:        item,
+		ContainerId: containerId,
+	}
+	msg = append(msg, putItemOp.Serialize()...)
+	response, err := client.sendMessage(msg)
+	if err != nil {
+		return err
+	}
+	if response.statusCode != '\x00' {
+		return errors.New(fmt.Sprintf("cant put item: %02x", response.statusCode))
+	}
+
+	return nil
+}
+
+func (client *Client) GetItem(containerID string, index int) (models.Item, error) {
+	msg := []byte{commands.GetItem}
+	getItemOp := commands.GetItemOp{
+		ContainerID: containerID,
+		ItemIndex:   index,
+	}
+	msg = append(msg, getItemOp.Serialize()...)
+	response, err := client.sendMessage(msg)
+	if err != nil {
+		return models.Item{}, err
+	}
+	if response.statusCode != '\x00' {
+		return models.Item{}, errors.New(fmt.Sprintf("cant get item: %02x", response.statusCode))
+	}
+
+	container, err := models.DeserializeItem(response.decryptedPayload)
+	if err != nil {
+		return models.Item{}, err
+	}
+
+	return container, nil
+}
+
 func (client *Client) GetStat(skip, take int) (*models.Statistic, error) {
 	msg := []byte{commands.GetStatistic}
 	getStatisticOp := commands.GetStatisticOp{

