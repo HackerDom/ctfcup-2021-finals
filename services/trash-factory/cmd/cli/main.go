@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/gocolly/colly"
 	log "github.com/sirupsen/logrus"
@@ -67,26 +68,26 @@ func (e Endpoints) GetWebUrl() string {
 }
 
 func main() {
-	//rand.Seed(time.Now().UnixMilli())
-	//addr := flag.String("addr", "", "backend url")
-	//command := flag.String("command", "", "command : check, put1, put2, get1, get2")
-	//data := flag.String("data", "", "data string")
-	//flag.Parse()
+	rand.Seed(time.Now().UnixMilli())
+	addr := flag.String("addr", "", "backend url")
+	command := flag.String("command", "", "command : check, put1, put2, get1, get2")
+	data := flag.String("data", "", "data string")
+	flag.Parse()
 
-	//v := Run(addr, command, data)
-	//fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
-	//fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
+	v := Run(addr, command, data)
+	fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
+	fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
 	//Test()
 	//err := HackPT("127.0.0.1")
 	//if err != nil {
 	//	log.Error(err)
 	//	return
 	//}
-	err := HackRandom("127.0.0.1")
-	if err != nil {
-		log.Error(err)
-		return
-	}
+	//err := HackRandom("127.0.0.1")
+	//if err != nil {
+	//	log.Error(err)
+	//	return
+	//}
 }
 
 func HackRandom(addr string) error {
@@ -129,9 +130,8 @@ func HackRandom(addr string) error {
 		}
 	}
 
-	return errors.New("Something wrong")
+	return error(NewVerdict(MUMBLE, "Something wrong"))
 }
-
 func HackPT(addr string) error {
 	endpoints := GetEndpoint(&addr)
 	tokenKey, token, err := CreateUser(endpoints.GetWebUrl())
@@ -166,7 +166,7 @@ func HackPT(addr string) error {
 			return err
 		}
 		if len(stat.Users) == 0 {
-			return errors.New("Not found")
+			return error(NewVerdict(MUMBLE, "Not found"))
 		}
 		for _, user := range stat.Users {
 			sprintf := fmt.Sprintf("../%s/1", user.TokenKey)
@@ -186,7 +186,7 @@ func HackPT(addr string) error {
 		}
 	}
 
-	return errors.New("Something wrong")
+	return error(NewVerdict(MUMBLE, "Something wrong"))
 }
 
 func Test() {
@@ -235,7 +235,7 @@ func Run(adrr *string, command *string, data *string) Verdict {
 			Reason: "",
 		}
 	case "put1":
-		tokenKey, token, err := Put_User(&endpoint)
+		tokenKey, token, err := Put_User(&endpoint, *data)
 		verdict, failed := EnsureSuccess(err)
 		if failed {
 			return verdict
@@ -360,13 +360,19 @@ func Check(endpoints *Endpoints) error {
 
 func CheckUser(err error, client *api.Client, tokenKey string) error {
 	log.Info("Try get user")
+	userDescription := GenerateDescription()
+	err = client.SetUserDescription(tokenKey, userDescription)
 	user, err := client.GetUser(tokenKey)
 	if err != nil {
 		return err
 	}
 
 	if user.TokenKey != tokenKey {
-		return errors.New("Not this user")
+		return error(NewVerdict(MUMBLE, "Not this user"))
+	}
+
+	if user.Description != userDescription {
+		return error(NewVerdict(MUMBLE, "Incorrect description"))
 	}
 
 	size := 5
@@ -398,7 +404,7 @@ func CheckUser(err error, client *api.Client, tokenKey string) error {
 			return err
 		}
 		if !reflect.DeepEqual(actualItem, expectedItem) {
-			return errors.New("Actual items not equal expected")
+			return error(NewVerdict(MUMBLE, "Actual items not equal expected"))
 		}
 	}
 	log.Info("Try get container")
@@ -408,14 +414,24 @@ func CheckUser(err error, client *api.Client, tokenKey string) error {
 	}
 
 	if !reflect.DeepEqual(container, expectedContainer) {
-		return errors.New("Actual container not equal expected")
+		return error(NewVerdict(MUMBLE, "Actual container not equal expected"))
 	}
 	return nil
 }
 
-func Put_User(endpoints *Endpoints) (string, string, error) {
+func GenerateDescription() string {
+	return "desc"
+}
+
+func Put_User(endpoints *Endpoints, flag string) (string, string, error) {
 	log.Info("Try Put User")
-	return CreateUser(endpoints.GetWebUrl())
+	tokenKey, token, err := CreateUser(endpoints.GetWebUrl())
+	client := api.NewClient(endpoints.GetCPUrl(), tokenKey, token)
+	err = client.SetUserDescription(tokenKey, flag)
+	if err != nil {
+		return "", "", err
+	}
+	return tokenKey, token, err
 }
 
 func Get_User(e *Endpoints, tokenKey string, token string) error {
