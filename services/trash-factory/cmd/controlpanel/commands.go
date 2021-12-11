@@ -28,14 +28,15 @@ type ControlPanel struct {
 func NewControlPanel() *ControlPanel {
 	cp := ControlPanel{}
 	cp.Commands = map[byte]interface{}{
-		commands.ContainerCreate:  cp.CreateContainer,
-		commands.ContainerList:    cp.ListContainers,
-		commands.GetContainerInfo: cp.GetContainerInfo,
-		commands.PutItem:          cp.PutItem,
-		commands.GetItem:          cp.GetItem,
-		commands.CreateUser:       cp.CreateUser,
-		commands.GetUser:          cp.GetUser,
-		commands.GetStatistic:     cp.GetStatistic,
+		commands.ContainerCreate:    cp.CreateContainer,
+		commands.ContainerList:      cp.ListContainers,
+		commands.GetContainerInfo:   cp.GetContainerInfo,
+		commands.PutItem:            cp.PutItem,
+		commands.GetItem:            cp.GetItem,
+		commands.CreateUser:         cp.CreateUser,
+		commands.GetUser:            cp.GetUser,
+		commands.SetUserDescription: cp.SetDescription,
+		commands.GetStatistic:       cp.GetStatistic,
 	}
 	cp.DB = NewDataBase()
 	cp.Cryptor = crypto.NewCryptor(magic)
