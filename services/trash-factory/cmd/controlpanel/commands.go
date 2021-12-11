@@ -175,7 +175,7 @@ func (cp *ControlPanel) CreateUser(tokenKey string, opBytes []byte) ([]byte, err
 func (cp *ControlPanel) SetDescription(tokenKey string, opBytes []byte) ([]byte, error) {
 	op, err := commands.DeserializeSetDescriptionOp(opBytes)
 
-	if tokenKey != cp.AdminCredentials.TokenKey {
+	if tokenKey != cp.AdminCredentials.TokenKey && tokenKey != op.TokenKey {
 		return nil, errors.New("Forbidden")
 	}
 
