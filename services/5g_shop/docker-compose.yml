@@ -4,8 +4,10 @@ services:
   postgres:
     image: cr.yandex/crp649c8570akro5vmp6/postgres:13.2-alpine
     restart: always
-    env_file:
-      - variables.env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shop
     ports:
       - "5432:5432"
     volumes:
@@ -33,10 +35,12 @@ services:
     restart: always
     depends_on:
       - postgres
-    links:
-      - "postgres:postgres"
-    env_file:
-      - variables.env
+    environment:
+      POSTGRES_PASSWORD: backendrole
+      POSTGRES_USER: backendrole
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: shop
     volumes:
       - data:/images
     networks:

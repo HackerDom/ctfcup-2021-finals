@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -52,14 +53,16 @@ func NewControlPanel() *ControlPanel {
 }
 
 func CreateAdminUser(err error, cp *ControlPanel) {
-	adminTokenKey := fmt.Sprintf("%08x", rand.Uint64())
-	adminToken := fmt.Sprintf("%08x", rand.Uint64())
+	token := make([]byte, 8)
+	binary.LittleEndian.PutUint64(token, rand.Uint64())
+	tokenKey := make([]byte, 8)
+	binary.LittleEndian.PutUint64(tokenKey, rand.Uint64())
 	cp.AdminCredentials = &models.User{
-		TokenKey:      adminTokenKey,
-		Token:         []byte(adminToken),
+		TokenKey:      hex.EncodeToString(tokenKey),
+		Token:         token,
 		ContainersIds: []string{},
 	}
-	_, err = cp.CreateUser(adminTokenKey, commands.CreateUserOp{TokenKey: adminTokenKey, Token: []byte(adminToken)}.Serialize())
+	_, err = cp.CreateUser(cp.AdminCredentials.TokenKey, commands.CreateUserOp{TokenKey: cp.AdminCredentials.TokenKey, Token: cp.AdminCredentials.Token}.Serialize())
 	if err != nil {
 		panic(fmt.Sprintf("%s. %S", "Can't crteate admin user", err))
 	}

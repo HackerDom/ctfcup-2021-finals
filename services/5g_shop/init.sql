@@ -1,3 +1,6 @@
+create role backendrole with login superuser password 'backendrole';
+
+
 create table if not exists public.users(
     id int generated always as identity,
     login varchar not null unique,
@@ -61,4 +64,7 @@ create table if not exists public.purchases(
 
 create index if not exists purchases_ware_id_index on public.purchases(ware_id);
 create index if not exists purchases_bayer_id_index on public.purchases(buyer_id);
+
+
+grant select, insert, update on all tables in schema public to backendrole;
 

