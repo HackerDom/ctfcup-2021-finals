@@ -75,7 +75,8 @@ def get_session_with_retry(
     return session
 
 
-calc = ctypes.CDLL(f'{os.path.dirname(os.path.realpath(__file__))}/libcalc.so')
+file_dir = os.path.dirname(os.path.realpath(__file__))
+calc = ctypes.CDLL(f'{file_dir}/libcalc.so')
 calc.GetCashback.restype = ctypes.c_int
 calc.GetCashback.argtypes = [ctypes.POINTER(ctypes.c_char)]
 
@@ -86,6 +87,33 @@ API_PORT = 4040
 AUTH_COOKIE_NAME = '5GAuth'
 
 mumble = Verdict.MUMBLE('wrong server response')
+down = Verdict.DOWN("service not responding")
+
+
+def nicehost(h):
+    if h.find(':') != -1:
+        return h
+
+    return h + ':' + str(API_PORT)
+
+
+def down_status_code(response):
+    return response.status_code == 502 or response.status_code == 503
+
+
+def select_random_image():
+    name = random.choice(
+        [
+            'laptop1.jpg',
+            'laptop2.jpg',
+            'laptop3.jpg',
+            'laptop4.jpeg',
+            'phon1.jpg',
+            'phon2.jpeg',
+            'phon3.jpeg',
+            'phon4.jpeg'
+        ])
+    return file_dir + "/" + name, name
 
 
 @checker.define_put(vuln_num=1, vuln_rate=1)
@@ -98,7 +126,7 @@ def put(put_request: PutRequest) -> Verdict:
         log.debug(f'creating user {login} with password {password} ({password_hash})')
 
         response = get_session_with_retry().post(
-            f'http://{put_request.hostname}/api/users',
+            f'http://{nicehost(put_request.hostname)}/api/users',
             headers={'User-Agent': get_random_user_agent()},
             json={
                 'login': login,
@@ -108,6 +136,9 @@ def put(put_request: PutRequest) -> Verdict:
         )
 
         log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+
+        if down_status_code(response):
+            return down
 
         if response.status_code != 201:
             log.error(f'unexpected code - {response.status_code}')
@@ -119,17 +150,17 @@ def put(put_request: PutRequest) -> Verdict:
         return Verdict.OK(auth_token)
     except Timeout as e:
         log.error(f'{e}, {print_exc()}')
-        return Verdict.DOWN("service not responding")
+        return down
     except Exception as e:
         log.error(f'{e}, {print_exc()}')
-        return Verdict.DOWN('cant create user')
+        return down
 
 
 @checker.define_get(vuln_num=1)
 def get(get_request: GetRequest) -> Verdict:
     try:
         response = get_session_with_retry().get(
-            f'http://{get_request.hostname}/api/users',
+            f'http://{nicehost(get_request.hostname)}/api/users',
             headers={"User-Agent": get_random_user_agent()},
             cookies={AUTH_COOKIE_NAME: get_request.flag_id},
             timeout=3
@@ -137,15 +168,24 @@ def get(get_request: GetRequest) -> Verdict:
 
         log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
 
+        if down_status_code(response):
+            return down
+
         if response.status_code != 200 or response.json()["credit_card_info"] != get_request.flag:
             return Verdict.CORRUPT('wrong flag')
 
         response = get_session_with_retry().get(
-            f'http://{get_request.hostname}/api/users/{response.json()["id"]}',
+            f'http://{nicehost(get_request.hostname)}/api/users/{response.json()["id"]}',
             headers={"User-Agent": get_random_user_agent()},
             cookies={AUTH_COOKIE_NAME: get_request.flag_id},
             timeout=3
         )
+
+        if down_status_code(response):
+            return down
+
+        if response.status_code != 200:
+            return mumble
 
         log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
 
@@ -155,7 +195,7 @@ def get(get_request: GetRequest) -> Verdict:
         return Verdict.OK()
     except Timeout as e:
         log.error(f'{e}, {print_exc()}')
-        return Verdict.DOWN("service not responding")
+        return down
     except Exception as e:
         log.error(f'{e}, {print_exc()}')
         return Verdict.CORRUPT("service can't give a flag")
@@ -174,17 +214,13 @@ def check(check_request: CheckRequest) -> Verdict:
         password_hash2 = get_sha256(password2)
         flag2 = generate_some_flag()
 
-        host = check_request.hostname
+        host = nicehost(check_request.hostname)
 
         uid1, auth1, verdict = check_create_user(host, login1, password1, password_hash1, flag1)
         if verdict is not None:
             return verdict
 
         uid2, auth2, verdict = check_create_user(host, login2, password2, password_hash2, flag2)
-        if verdict is not None:
-            return verdict
-
-        verdict = check_auth(host, login1, password_hash1, auth1)
         if verdict is not None:
             return verdict
 
@@ -200,11 +236,19 @@ def check(check_request: CheckRequest) -> Verdict:
         if verdict is not None:
             return verdict
 
-        ware_id1, verdict = check_create_ware_and_my_wares_list(host, auth1, uid1)
+        image1_id, verdict = check_upload_image(host, auth1)
         if verdict is not None:
             return verdict
 
-        ware_id2, verdict = check_create_ware_and_my_wares_list(host, auth2, uid2)
+        image2_id, verdict = check_upload_image(host, auth2)
+        if verdict is not None:
+            return verdict
+
+        ware_id1, verdict = check_create_ware_and_my_wares_list(host, auth1, uid1, image1_id)
+        if verdict is not None:
+            return verdict
+
+        ware_id2, verdict = check_create_ware_and_my_wares_list(host, auth2, uid2, image2_id)
         if verdict is not None:
             return verdict
 
@@ -221,10 +265,87 @@ def check(check_request: CheckRequest) -> Verdict:
         return Verdict.OK()
     except Timeout as e:
         log.error(f'{e}, {print_exc()}')
-        return Verdict.DOWN("service not responding")
+        return down
     except Exception as e:
         log.error(f'{e}, {print_exc()}')
-        return Verdict.DOWN('check failed')
+        return down
+
+
+def check_upload_image(host, auth):
+    path, name = select_random_image()
+    with open(path, 'rb') as f:
+        data = f.read()
+    response = get_session_with_retry().post(
+        f'http://{host}/api/images',
+        headers={'User-Agent': get_random_user_agent()},
+        cookies={AUTH_COOKIE_NAME: auth},
+        files={name: data}
+    )
+    log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+    if down_status_code(response):
+        return None, down
+
+    if response.status_code != 201:
+        return None, mumble
+
+    j = response.json()
+    id_, path = j["id"], j["path"]
+    if path is None or id_ is None:
+        return None, mumble
+
+    response = get_session_with_retry().get(
+        f'http://{host}{path}',
+        headers={'User-Agent': get_random_user_agent()},
+        cookies={AUTH_COOKIE_NAME: auth},
+    )
+    if down_status_code(response):
+        return None, down
+
+    if response.status_code != 200:
+        return None, mumble
+
+    content = response.content
+    if len(data) != len(content):
+        return None, mumble
+
+    for i in range(len(data)):
+        if data[i] != content[i]:
+            log.error('returning files are not equals')
+            return None, mumble
+
+    response = get_session_with_retry().get(
+        f'http://{host}/api/images/{id_}',
+        headers={'User-Agent': get_random_user_agent()},
+        cookies={AUTH_COOKIE_NAME: auth}
+    )
+    log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+    if down_status_code(response):
+        return None, down
+    if response.status_code != 200:
+        return None, mumble
+
+    if str(response.json()["id"]) != str(id_) or response.json()["path"] != path:
+        return None, mumble
+
+    response = get_session_with_retry().get(
+        f'http://{host}/api/images/my',
+        headers={'User-Agent': get_random_user_agent()},
+        cookies={AUTH_COOKIE_NAME: auth}
+    )
+    log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+    if down_status_code(response):
+        return None, down
+    if response.status_code != 200:
+        return None, mumble
+
+    imgs = response.json()["images"]
+    if imgs is None or len(imgs) != 1:
+        return None, mumble
+
+    if str(imgs[0]["id"]) != str(id_) or str(imgs[0]["path"]) != path:
+        return None, mumble
+
+    return id_, None
 
 
 def check_make_purchase(host, auth, ware_id):
@@ -238,6 +359,10 @@ def check_make_purchase(host, auth, ware_id):
             headers={'User-Agent': get_random_user_agent()},
             cookies={AUTH_COOKIE_NAME: auth}
         )
+
+        if down_status_code(response):
+            return down
+
         if response.status_code != 201:
             log.error("invalid status")
             return mumble
@@ -258,6 +383,10 @@ def check_make_purchase(host, auth, ware_id):
         cookies={AUTH_COOKIE_NAME: auth}
     )
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+
+    if down_status_code(response):
+        return down
+
     if response.status_code != 200:
         return mumble
 
@@ -276,7 +405,7 @@ def check_make_purchase(host, auth, ware_id):
     return None
 
 
-def check_create_ware_and_my_wares_list(host, auth, uid):
+def check_create_ware_and_my_wares_list(host, auth, uid, iid):
     log.debug(f'check create ware for {auth} {uid}')
 
     title = str(uuid.uuid4())
@@ -291,11 +420,15 @@ def check_create_ware_and_my_wares_list(host, auth, uid):
         json={
             "title": title,
             "description": description,
-            "price": price
+            "price": price,
+            "image_id": iid
         },
         timeout=3
     )
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+
+    if down_status_code(response):
+        return None, down
 
     if response.status_code != 201:
         return None, mumble
@@ -312,6 +445,9 @@ def check_create_ware_and_my_wares_list(host, auth, uid):
     )
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
 
+    if down_status_code(response):
+        return None, down
+
     if response.status_code != 200 or response.json()["ids"] is None:
         return None, mumble
 
@@ -327,6 +463,9 @@ def check_create_ware_and_my_wares_list(host, auth, uid):
         timeout=3
     )
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+
+    if down_status_code(response):
+        return None, down
 
     if response.status_code != 200:
         return None, mumble
@@ -356,6 +495,9 @@ def check_users_list(host, auth1, auth2):
 
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
 
+    if down_status_code(response):
+        return down
+
     if response.status_code != 200 or response.json()["id"] is None:
         return mumble
 
@@ -369,6 +511,9 @@ def check_users_list(host, auth1, auth2):
     )
 
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
+
+    if down_status_code(response):
+        return down
 
     if response.status_code != 200 or response.json()["id"] is None:
         return mumble
@@ -386,6 +531,9 @@ def check_users_list(host, auth1, auth2):
             cookies={AUTH_COOKIE_NAME: auth1},
             timeout=3
         )
+
+        if down_status_code(response):
+            return down
 
         if response.status_code != 200 or response.json()["users"] is None:
             return mumble
@@ -422,6 +570,9 @@ def check_auth(host, login, phash, auth):
         }
     )
 
+    if down_status_code(response):
+        return down
+
     if response.status_code != 200 or response.cookies[AUTH_COOKIE_NAME] != auth:
         return mumble
 
@@ -443,6 +594,9 @@ def check_create_user(host, login, password, password_hash, flag):
 
     log.debug(f'response: \ncode: {response.status_code}\nheaders:{response.headers}\ntext:{response.text}')
 
+    if down_status_code(response):
+        return None, None, down
+
     user_id = response.json()["id"]
     if response.status_code != 201 or user_id is None:
         log.error(f'unexpected code - {response.status_code}')
@@ -460,6 +614,9 @@ def check_create_user(host, login, password, password_hash, flag):
         cookies={AUTH_COOKIE_NAME: auth_token}
     )
 
+    if down_status_code(response):
+        return None, None, down
+
     if response.status_code != 200:
         return None, None, mumble
 
@@ -471,7 +628,8 @@ def check_create_user(host, login, password, password_hash, flag):
         log.debug('invalid login')
         return None, None, mumble
 
-    if (datetime.utcnow() - parser.parse(j["created_at"])).seconds >= 15:
+    # TODO: may be delete this checking ?
+    if (datetime.utcnow() - parser.parse(j["created_at"])).seconds >= 20:
         log.debug('invalid created at')
         return None, None, mumble
 

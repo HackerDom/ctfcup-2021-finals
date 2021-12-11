@@ -13,7 +13,8 @@ WaresService::WaresService(std::shared_ptr<PGConnectionPool> pgConnectionPool)
         : pgConnectionPool(std::move(pgConnectionPool)) {
 }
 
-Result<std::string> WaresService::Create(int sellerId, const std::string &title, const std::string &description, int price) {
+Result<std::string>
+WaresService::Create(int sellerId, const std::string &title, const std::string &description, int price, int imageId) {
     Defer defer;
 
     PGresult *result = nullptr;
@@ -26,13 +27,14 @@ Result<std::string> WaresService::Create(int sellerId, const std::string &title,
     auto guard = pgConnectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
-    auto query = format(
-            HiddenStr("insert into wares values (default, %d, '%s', '%s', %d, %d) returning id;"),
+    auto query = Format(
+            HiddenStr("insert into wares values (default, %d, '%s', '%s', %d, %d, %d) returning id;"),
             sellerId,
             title.c_str(),
             description.c_str(),
             price,
-            serviceFee
+            serviceFee,
+            imageId
     );
 
     result = PQexec(conn, query.c_str());
@@ -55,7 +57,7 @@ Result<std::shared_ptr<Ware>> WaresService::Get(int id) {
     auto guard = pgConnectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
-    auto query = format(HiddenStr("select * from wares where id=%d;"), id);
+    auto query = Format(HiddenStr("select * from wares where id=%d;"), id);
 
     result = PQexec(conn, query.c_str());
 
@@ -77,7 +79,7 @@ Result<std::vector<std::shared_ptr<Ware>>> WaresService::GetWaresOfUser(int user
     auto guard = pgConnectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
-    auto query = format(HiddenStr("select * from wares where seller_id=%d;"), userId);
+    auto query = Format(HiddenStr("select * from wares where seller_id=%d;"), userId);
 
     result = PQexec(conn, query.c_str());
 

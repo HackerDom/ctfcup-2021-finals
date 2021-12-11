@@ -3,6 +3,7 @@
 
 #include <string>
 #include <utility>
+#include <functional>
 
 namespace shop {
     template<class T>
@@ -28,38 +29,18 @@ namespace shop {
             return {false, T(), std::move(message)};
         }
 
+        template <class TNext>
+        Result<TNext> then(std::function<Result<TNext>(const T&)> map) {
+            if (!success) {
+                return Result<TNext>::ofError(message);
+            }
+
+            return map(value);
+        }
+
     private:
         Result(bool success, T value, std::string message)
                 : success(success), value(std::move(value)), message(std::move(message)) {
-        }
-    };
-
-    typedef Result<void> JustResult;
-
-    template<>
-    class Result<void> {
-    public:
-        const bool success;
-        const std::string message;
-
-        static Result ofSuccess() {
-            return {true, ""};
-        }
-
-        static Result ofSuccess(std::string message) {
-            return {true, std::move(message)};
-        }
-
-        static Result ofError() {
-            return {false, ""};
-        }
-
-        static Result ofError(std::string message) {
-            return {false, std::move(message)};
-        }
-
-    private:
-        Result(bool success, std::string message) : success(success), message(std::move(message)) {
         }
     };
 }

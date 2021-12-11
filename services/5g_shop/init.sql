@@ -14,6 +14,22 @@ create index if not exists users_login_index on public.users(login);
 create index if not exists users_auth_cookie_index on public.users(auth_cookie);
 
 
+create table if not exists public.images(
+    id int generated always as identity,
+    owner_id int,
+    filename varchar not null,
+    sha256 varchar not null,
+
+    primary key(id),
+
+    foreign key(owner_id) references public.users(id)
+);
+
+create index if not exists images_owner_id_index on public.images(owner_id);
+create index if not exists images_sha256_index on public.images(sha256);
+create index if not exists images_filename_index on public.images(filename);
+
+
 create table if not exists public.wares(
     id int generated always as identity,
     seller_id int,
@@ -21,10 +37,12 @@ create table if not exists public.wares(
     description varchar not null,
     price int,
     service_fee int,
+    image_id int,
 
     primary key(id),
 
-    foreign key(seller_id) references public.users(id)
+    foreign key(seller_id) references public.users(id),
+    foreign key(image_id) references public.images(id)
 );
 
 create index if not exists wares_seller_id_index on public.wares(seller_id);

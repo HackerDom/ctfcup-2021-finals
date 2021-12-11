@@ -23,7 +23,7 @@ Result<std::string> PurchasesService::Create(int buyerId, int wareId) {
     auto guard = pgConnectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
-    auto query = format(
+    auto query = Format(
             HiddenStr("insert into purchases values (default, %d, %d) returning id;"),
             wareId,
             buyerId
@@ -53,7 +53,7 @@ Result<std::vector<std::shared_ptr<Purchase>>> PurchasesService::GetOfUser(int u
     auto guard = pgConnectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
-    auto query = format(HiddenStr("select * from purchases where buyer_id=%d;"), userId);
+    auto query = Format(HiddenStr("select * from purchases where buyer_id=%d;"), userId);
 
     result = PQexec(conn, query.c_str());
 

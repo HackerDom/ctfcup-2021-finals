@@ -1415,7 +1415,7 @@ namespace crow
 
         inline static std::string base64decode(const char* data, size_t size, bool urlsafe = false)
         {
-            // clang-format off
+            // clang-Format off
             std::unordered_map<char, unsigned char> key ({
             {'A',  0},{'B',  1},{'C',  2},{'D',  3},{'E',  4},{'F',  5},{'G',  6},{'H',  7},{'I',  8},{'J',  9},
             {'K', 10},{'L', 11},{'M', 12},{'N', 13},{'O', 14},{'P', 15},{'Q', 16},{'R', 17},{'S', 18},{'T', 19},
@@ -1425,7 +1425,7 @@ namespace crow
             {'y', 50},{'z', 51},{'0', 52},{'1', 53},{'2', 54},{'3', 55},{'4', 56},{'5', 57},{'6', 58},{'7', 59},
             {'8', 60},{'9', 61},{urlsafe ? '-' : '+', 62},{urlsafe ? '_' : '/', 63}});
 
-            // clang-format on
+            // clang-Format on
 
             // Not padded
             if (size % 4 == 2)             // missing last 2 characters
@@ -1539,7 +1539,7 @@ namespace crow
         // should not add an item below this line: used for array count
     };
 
-    // clang-format off
+    // clang-Format off
 
     enum status
     {
@@ -1604,7 +1604,7 @@ namespace crow
         return "invalid";
     }
 
-    // clang-format on
+    // clang-Format on
 
     enum class ParamType : char
     {
@@ -3106,7 +3106,7 @@ namespace crow
 namespace crow
 {
     /// Encapsulates anything related to processing and organizing `multipart/xyz` messages
-    namespace multipart
+        namespace multipart
     {
         const std::string dd = "--";
         const std::string crlf = "\r\n";
@@ -3352,13 +3352,13 @@ namespace crow
             return crow::get_header_value(headers, key);
         }
 
-        // TODO find a better way to format this so that stuff aren't moved down a line
-        // clang-format off
+        // TODO find a better way to Format this so that stuff aren't moved down a line
+        // clang-Format off
         response() {}
         explicit response(int code) : code(code) {}
         response(std::string body) : body(std::move(body)) {}
         response(int code, std::string body) : code(code), body(std::move(body)) {}
-        // clang-format on
+        // clang-Format on
         response(returnable&& value)
         {
             body = value.dump();
