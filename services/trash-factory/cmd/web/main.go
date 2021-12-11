@@ -20,6 +20,11 @@ var (
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("Recovered: ", r)
+		}
+	}()
 	if r.Method != "GET" {
 		http.Error(w, "Bad request", http.StatusMethodNotAllowed)
 		return
@@ -52,6 +57,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func tokenHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("Recovered: ", r)
+		}
+	}()
 	if r.Method != "GET" {
 		http.Error(w, "Bad request", http.StatusMethodNotAllowed)
 		return
@@ -104,6 +114,11 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func statHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("Recovered: ", r)
+		}
+	}()
 	pageN := 0
 	if pageNParam, ok := r.URL.Query()["page"]; ok && len(pageNParam) > 0 {
 		pageNParsed, err := strconv.Atoi(pageNParam[0])

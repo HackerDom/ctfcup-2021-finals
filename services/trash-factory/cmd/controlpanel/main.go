@@ -15,6 +15,11 @@ var (
 
 func handleConn(conn net.Conn) {
 	defer conn.Close()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("Recovered: ", r)
+		}
+	}()
 	_, err := conn.Write(magic)
 	if err != nil {
 		log.Error(err)
