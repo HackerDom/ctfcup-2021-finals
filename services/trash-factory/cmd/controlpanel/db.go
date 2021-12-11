@@ -91,6 +91,20 @@ func (db *DataBase) GetContainer(tokenKey string, containerId string) (*models.C
 	return &container, nil
 }
 
+func (db *DataBase) GetContainersCount(tokenKey string) (int, error) {
+	userFolder := db.containerDBPath + tokenKey + "/"
+	dir, err := os.ReadDir(userFolder)
+
+	if _, err := os.Stat(userFolder); os.IsNotExist(err) {
+		return 0, nil
+	}
+
+	if err != nil {
+		return -1, err
+	}
+	return len(dir), nil
+}
+
 func (db *DataBase) GetAllUsers() (*[]string, error) {
 	dir, err := os.ReadDir(db.userDBPath)
 	if err != nil {

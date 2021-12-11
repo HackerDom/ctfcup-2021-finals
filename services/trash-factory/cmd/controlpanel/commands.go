@@ -8,6 +8,8 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"strconv"
+	"sync"
 	"time"
 	"trash-factory/pkg/commands"
 	"trash-factory/pkg/crypto"
@@ -26,15 +28,15 @@ type ControlPanel struct {
 func NewControlPanel() *ControlPanel {
 	cp := ControlPanel{}
 	cp.Commands = map[byte]interface{}{
-		commands.ContainerCreate:  cp.CreateContainer,
-		commands.ContainerList:    cp.ListContainers,
-		commands.GetContainerInfo: cp.GetContainerInfo,
-		commands.PutItem:          cp.PutItem,
-		commands.GetItem:          cp.GetItem,
-		commands.CreateUser:       cp.CreateUser,
-		commands.GetUser:          cp.GetUser,
-		commands.ListUsers:        cp.ListUsers,
-		commands.GetStatistic:     cp.GetStatistic,
+		commands.ContainerCreate:    cp.CreateContainer,
+		commands.ContainerList:      cp.ListContainers,
+		commands.GetContainerInfo:   cp.GetContainerInfo,
+		commands.PutItem:            cp.PutItem,
+		commands.GetItem:            cp.GetItem,
+		commands.CreateUser:         cp.CreateUser,
+		commands.GetUser:            cp.GetUser,
+		commands.SetUserDescription: cp.SetDescription,
+		commands.GetStatistic:       cp.GetStatistic,
 	}
 	cp.DB = NewDataBase()
 	cp.Cryptor = crypto.NewCryptor(magic)
@@ -130,22 +132,6 @@ func (cp *ControlPanel) ListContainers(tokenKey string, opBytes []byte) ([]byte,
 	return writer.GetBytes(), nil
 }
 
-func (cp *ControlPanel) ListUsers(tokenKey string, opBytes []byte) ([]byte, error) {
-	users, err := cp.DB.GetAllUsers()
-	if err != nil {
-		return nil, err
-	}
-
-	writer := serializeb.NewWriter()
-
-	writer.WriteArraySize(len(*users))
-	for _, user := range *users {
-		writer.WriteString(user)
-	}
-
-	return writer.GetBytes(), nil
-}
-
 func (cp *ControlPanel) GetUser(tokenKey string, opBytes []byte) ([]byte, error) {
 	op, err := commands.DeserializeGetUserOp(opBytes)
 	if err != nil {
@@ -175,9 +161,32 @@ func (cp *ControlPanel) CreateUser(tokenKey string, opBytes []byte) ([]byte, err
 		TokenKey:      op.TokenKey,
 		Token:         op.Token,
 		ContainersIds: make([]string, 0),
+		Description:   "",
 	}
 
 	err = cp.DB.SaveUser(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (cp *ControlPanel) SetDescription(tokenKey string, opBytes []byte) ([]byte, error) {
+	op, err := commands.DeserializeSetDescriptionOp(opBytes)
+
+	if tokenKey != cp.AdminCredentials.TokenKey && tokenKey != op.TokenKey {
+		return nil, errors.New("Forbidden")
+	}
+
+	user, err := cp.DB.GetUser(op.TokenKey)
+	if err != nil {
+		return nil, err
+	}
+
+	user.Description = op.Description
+
+	err = cp.DB.SaveUser(user)
 	if err != nil {
 		return nil, err
 	}
@@ -244,9 +253,15 @@ func (cp *ControlPanel) CreateContainer(tokenKey string, opBytes []byte) ([]byte
 		return nil, errors.New("incorrect container size")
 	}
 
-	fmt.Println(op.Description)
+	mu := sync.Mutex{}
+	mu.Lock()
+	defer mu.Unlock()
+	count, err := cp.DB.GetContainersCount(tokenKey)
+	if err != nil {
+		return nil, err
+	}
 	container := models.Container{
-		ID:          fmt.Sprintf("%08x", rand.Uint64()),
+		ID:          strconv.Itoa(count + 1),
 		Size:        op.Size,
 		Description: op.Description,
 	}
