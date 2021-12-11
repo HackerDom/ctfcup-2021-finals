@@ -216,6 +216,27 @@ func (client *Client) GetUser(tokenKey string) (*models.User, error) {
 	return &user, nil
 }
 
+func (client *Client) SetUserDescription(tokenKey string, description string) (*models.User, error) {
+	msg := []byte{commands.SetUserDescription}
+	setDescriptionOp := commands.SetDescriptionOp{
+		TokenKey:    tokenKey,
+		Description: description,
+	}
+	msg = append(msg, setDescriptionOp.Serialize()...)
+	response, err := client.sendMessage(msg)
+	if err != nil {
+		return nil, err
+	}
+	if response.statusCode != '\x00' {
+		return nil, errors.New(fmt.Sprintf("cant get user: %02x", response.statusCode))
+	}
+	user, err := models.DeserializeUser(response.decryptedPayload)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (client *Client) CreateContainer(size int, description string) (string, error) {
 	msg := []byte{commands.ContainerCreate}
 	createContainerOp := commands.CreateContainerOp{
