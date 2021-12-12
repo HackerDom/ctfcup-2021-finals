@@ -61,7 +61,7 @@ func main() {
 		if err != nil {
 			log.Error(err)
 		}
-		log.Info(user.Description)
+		fmt.Println(user.Description)
 	} else {
 		log.Warn("Not found")
 	}
