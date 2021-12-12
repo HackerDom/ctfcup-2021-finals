@@ -1,6 +1,7 @@
 package main
 
 import (
+	"1_session_generation/pkg/api"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -35,7 +36,7 @@ func getCookieSession(ts int, tokenKey string) string {
 
 
 func main() {
-	if len(os.Args) < 2 {
+	if len(os.Args) < 1 {
 		log.Errorf("Usage: %s <TOKEN_KEY>", os.Args[0])
 		return
 	}
@@ -44,7 +45,7 @@ func main() {
 
 	session := getCookieSession(int(time.Now().Unix()), TokenKey)
 
-	req, _ := http.NewRequest("GET", "http://127.0.0.1:8080/token", nil)
+	req, _ := http.NewRequest("GET", "http://10.118.103.11:8080/token", nil)
 	req.AddCookie(&http.Cookie{Name: "session", Value: session})
 
 	client := &http.Client{}
@@ -52,7 +53,15 @@ func main() {
 	if resp.StatusCode == 200 {
 		log.Infof("session=%s", session)
 		responseData, _ := ioutil.ReadAll(resp.Body)
-		log.Info(string(patternRegExp.Find(responseData)))
+		response := patternRegExp.Find(responseData)
+		log.Info(string(response))
+		token := string(response[len("TOKEN: "):])
+		c := api.NewClient("10.118.103.11:9090", TokenKey, token)
+		user, err := c.GetUser(TokenKey)
+		if err != nil {
+			log.Error(err)
+		}
+		log.Info(user.Description)
 	} else {
 		log.Warn("Not found")
 	}
