@@ -35,8 +35,8 @@ cs_ctf_name: CTFCup 2021 final
 cs_flags_secret: 2d61d007403d7766f62815b6bfb14184dbd12d2a
 cs_round_length: 60
 cs_flag_life_time: 12
-cs_time: "['2021-12-04 00:00:00', '2021-12-12 23:59:00']"
-#cs_time: "['2021-12-12 07:00:00', '2021-12-12 10:59:00']"
+#cs_time: "['2021-12-04 00:00:00', '2021-12-12 23:59:00']"
+cs_time: "['2021-12-12 07:00:00', '2021-12-12 10:59:00']"
 
 
 cs_checkers_hostname_cb: |
