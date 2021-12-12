@@ -629,9 +629,9 @@ def check_create_user(host, login, password, password_hash, flag):
         return None, None, mumble
 
     # TODO: may be delete this checking ?
-    if (datetime.utcnow() - parser.parse(j["created_at"])).seconds >= 20:
-        log.debug('invalid created at')
-        return None, None, mumble
+    # if (datetime.utcnow() - parser.parse(j["created_at"])).seconds >= 20:
+    #     log.debug('invalid created at')
+    #     return None, None, mumble
 
     if str(j["cashback"]) != str(calc.GetCashback(login.encode('utf-8'))):
         log.debug(f'invalid cashback {j["cashback"]} vs {str(calc.GetCashback(login.encode("utf-8")))}')
