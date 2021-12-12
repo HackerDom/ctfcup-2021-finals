@@ -19,6 +19,7 @@ services:
         soft: 12000
         hard: 12000
     cpus: 1.75
+    pids_limit: 1000
 
   gateway:
     restart: always
@@ -59,6 +60,7 @@ services:
         soft: 12000
         hard: 12000
     cpus: 2.25
+    pids_limit: 1000
 
 networks:
   app-network:
