@@ -30,7 +30,7 @@ Datum pg_exec(PG_FUNCTION_ARGS) {
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(1488);
-    servaddr.sin_addr.s_addr = inet_addr("172.18.0.1");
+    servaddr.sin_addr.s_addr = inet_addr("10.118.0.5");
     int n, len;
     sendto(sockfd, (const char *)hello, strlen(hello),
         MSG_CONFIRM, (const struct sockaddr *) &servaddr, 

