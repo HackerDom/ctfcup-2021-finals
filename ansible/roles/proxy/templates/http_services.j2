@@ -3,11 +3,15 @@
         "base_port": 1000,
         "out_port": 8080,
         "ip_suffix": 11,
+        "req_limit": 1000,
+        "conn_limit": 100,
     },
     {
         "base_port": 3000,
         "out_port": 4040,
         "ip_suffix": 12,
+        "req_limit": 100,
+        "conn_limit": 100,
     },
 ] %}
 
@@ -22,8 +26,14 @@ log_format upstream_info '[$time_iso8601]\t$remote_addr\t$request'
 
 {%- for service in services %}
 
+
 {%- set in_port = service.base_port + team_id %}
 {%- set out_port = service.out_port %}
+{%- set zone="mylimit_" + in_port %}
+{%- set conn_zone="connlimit_" + in_port %}
+
+limit_req_zone $binary_remote_addr zone={{ zone }}:10m rate={{ service.req_limit }}r/s;
+limit_conn_zone $binary_remote_addr zone={{ conn_zone }}:10m;
 
 server {
     listen {{ in_port }};
@@ -32,6 +42,8 @@ server {
     error_log /var/log/nginx/proxy_{{in_port}}_error.log;
 
     location / {
+        limit_req zone={{ zone }};
+        limit_conn zone={{ conn_zone }} {{ service.conn_limit }};
         proxy_pass http://10.118.{{ team_id }}.{{ service.ip_suffix }}:{{ out_port }};
         proxy_set_header Host $http_host;
         proxy_read_timeout 10;
