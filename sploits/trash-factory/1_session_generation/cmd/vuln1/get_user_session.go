@@ -22,18 +22,17 @@ func encode(value []byte) []byte {
 }
 
 func getCookieSession(ts int, tokenKey string) string {
-	a:=securecookie.GobEncoder{}
-	b, _ := a.Serialize(map[interface{}]interface{} {"tokenKey": tokenKey})
+	a := securecookie.GobEncoder{}
+	b, _ := a.Serialize(map[interface{}]interface{}{"tokenKey": tokenKey})
 	b = encode(b)
 	b = []byte(fmt.Sprintf("session|%d|%s|", ts, b))
 	mac := hmac.New(sha256.New, []byte{})
 	mac.Write(b[:len(b)-1])
 	hash := mac.Sum(nil)
 	b = append(b, hash...)[len("session")+1:]
- 	b = encode(b)
+	b = encode(b)
 	return string(b)
 }
-
 
 func main() {
 	if len(os.Args) < 1 {
