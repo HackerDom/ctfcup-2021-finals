@@ -2,7 +2,7 @@ from os import system as r
 import os
 import re
 
-PASSWORD='r86ue5laz88f9p4asn'
+PASSWORD='49c8885b9c8b9b246158'
 
 teams = [t for t in os.listdir('.') if t.isdigit()]
 teams.sort()
