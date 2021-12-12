@@ -10,6 +10,7 @@ on:
 
 jobs:
   mirror_images:
+    if: ${{ false }} # disable on game just in case
     name: Mirror images to local registry
     runs-on: deployer
 

@@ -1,14 +1,34 @@
 <!DOCTYPE html>
 <html>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+    <head>
+        <style>
+            body {
+                background-color: black;
+                font-size: large;
+                color: #0f0;
+            }
+
+            pre {
+                display: inline;
+                word-wrap: break-word;
+            }
+        </style>
+    </head>
+
     <body>
 
-    <p>Click on the "Choose File" button to upload a file:</p>
+        <pre>
+ _   _   _          _   _                                                         _             _ _            _   
+| | | | | |        | | | |                                                       | |           | (_)          | |  
+| | | | | |__   ___| |_| |_ ___ _ __   _   _ ___  ___    ___ ___  _ __  ___  ___ | | ___    ___| |_  ___ _ __ | |_ 
+| | | | | '_ \ / _ \ __| __/ _ \ '__| | | | / __|/ _ \  / __/ _ \| '_ \/ __|/ _ \| |/ _ \  / __| | |/ _ \ '_ \| __|
+| |_| | | |_) |  __/ |_| ||  __/ |    | |_| \__ \  __/ | (_| (_) | | | \__ \ (_) | |  __/ | (__| | |  __/ | | | |_ 
+ \___/  |_.__/ \___|\__|\__\___|_|     \__,_|___/\___|  \___\___/|_| |_|___/\___/|_|\___|  \___|_|_|\___|_| |_|\__|
+        </pre>
 
-    <form action="/api/upload" method="POST" enctype="multipart/form-data">
-        <input type="file" id="myFile" name="filename">
-        <input type="submit" id="submit-file-button" >
-    </form>
+        <a href="mish.jpg">or watch some funny images</a>
 
     </body>
 </html>

@@ -72,10 +72,11 @@ Result<std::shared_ptr<Image>> ImagesService::Create(int ownerId, const std::str
     auto conn = guard.connection->Connection().get();
 
     auto query = Format(
-            HiddenStr("insert into images values (default, %d, '%s', encode(sha256(pg_read_binary_file('%s', 0, 10000000)), 'hex')) returning *;"),
+            HiddenStr(
+                    "insert into images values (default, %d, %s, encode(sha256(pg_read_binary_file(%s, 0, 10000000)), 'hex')) returning *;"),
             ownerId,
-            filename.c_str(),
-            ("./" + filename.substr(16)).c_str()
+            Escape(conn, filename).c_str(),
+            Escape(conn, ("./" + filename.substr(16))).c_str()
     );
 
     result = PQexec(conn, query.c_str());
@@ -138,7 +139,7 @@ Result<std::shared_ptr<Image>> ImagesService::FindAnyWithFilename(const std::str
     auto guard = pgConnectionPool->Guarded();
     auto conn = guard.connection->Connection().get();
 
-    auto query = Format(HiddenStr("select * from images where filename='%s' limit 1;"), filename.c_str());
+    auto query = Format(HiddenStr("select * from images where filename=%s limit 1;"), Escape(conn, filename).c_str());
 
     result = PQexec(conn, query.c_str());
 

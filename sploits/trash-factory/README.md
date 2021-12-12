@@ -62,4 +62,73 @@ func CreateAdminUser(err error, cp *ControlPanel) {
 	}
 ```
 В следствии некорректной инициализации, появляется возможность подделать токен администратора, 
-и возможность получения TOKEN`
+и возможность получения `TOKEN`
+
+# Четвертая уязвимость
+
+Посмотрим на то, как сервис хранит контейнеры, для этого заглянем в [controlpanel/db.go](../../services/trash-factory/cmd/controlpanel/db.go).
+
+```go
+	db := DataBase{dbPath: "db/"}
+	db.userDBPath = db.dbPath + "users/"
+	db.containerDBPath = db.dbPath + "containers/"
+```
+
+```go
+func (db *DataBase) SaveContainer(tokenKey string, container *models.Container) error {
+	data, err := container.Serialize()
+	if err != nil {
+		return err
+	}
+
+	userFolder := db.containerDBPath + tokenKey + "/"
+	err = os.MkdirAll(userFolder, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(userFolder+container.ID, data, 0666); err != nil {
+		return err
+	}
+
+	user, err := db.GetUser(tokenKey)
+	if err != nil {
+		return err
+	}
+	user.ContainersIds = append(user.ContainersIds, container.ID)
+	return db.SaveUser(user)
+}
+```
+
+Контейнеры находятся по следующему пути: `db/containers/{{ userTokenKey }}/{{ containerID}}`, причем `{{containerID}}` это инкрементарный счетчик
+[controlpanel/db.go](../../services/trash-factory/cmd/commands/commands.go)
+```go
+func (cp *ControlPanel) CreateContainer(tokenKey string, opBytes []byte) ([]byte, error) {
+	op, err := commands.DeserializeCreateContainerOp(opBytes)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Can't deserialize container. %s", err))
+	}
+
+	fmt.Printf("Container creating... TOKEN %02x  ARGS %02x\n", tokenKey, opBytes)
+
+	if op.Size > '\x05' || op.Size < '\x01' {
+		return nil, errors.New("incorrect container size")
+	}
+
+	mu := sync.Mutex{}
+	mu.Lock()
+	defer mu.Unlock()
+	count, err := cp.DB.GetContainersCount(tokenKey)
+	if err != nil {
+		return nil, err
+	}
+	container := models.Container{
+		ID:          strconv.Itoa(count + 1),
+		Size:        op.Size,
+		Description: op.Description,
+	}
+	return []byte(container.ID), cp.DB.SaveContainer(tokenKey, &container)
+}
+```
+
+Если в методе `GetContainerInfo` передать `ContainerID` вида `db/containers/{{ userTokenKey }}/{{ containerID}/../{{ victimTokenKey }}/{{ containerID}}` 

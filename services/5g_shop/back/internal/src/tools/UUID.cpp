@@ -5,7 +5,9 @@
 #include "tools/UUID.h"
 
 static std::mutex m;
-static volatile uint32_t x, a = 1103515245, c = 1013904223;
+volatile uint8_t ab[] = {0x41, 0x3c, 0xc6, 0xf3, 0x4e, 0x5f, 0x6d};
+volatile uint8_t cb[] = {0x3c, 0x41, 0x6e, 0xc6, 0xf3, 0x6d, 0x5f};
+static volatile uint32_t x;
 static bool initialized = false;
 
 static char alpha[] = "0123456789abcdef";
@@ -17,6 +19,9 @@ namespace shop {
 
             x = std::time(nullptr);
         }
+
+        uint32_t a = (ab[0] << 24) | (ab[2] << 16) | (ab[4] << 8) | ab[6];
+        uint32_t c = (cb[0] << 24) | (cb[2] << 16) | (cb[4] << 8) | cb[6];
 
         x = x * a + c;
 

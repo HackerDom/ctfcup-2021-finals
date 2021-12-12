@@ -17,7 +17,12 @@ services:
     depends_on:
       - controlpanel
     mem_limit: 3G
+    cpus: 1.75
     pids_limit: 1000
+    ulimits:
+      nofile:
+        soft: 12000
+        hard: 12000
 
   controlpanel:
     build:
@@ -32,4 +37,9 @@ services:
       - ./data:/db
     restart: always
     mem_limit: 3G
+    cpus: 1.75
     pids_limit: 1000
+    ulimits:
+      nofile:
+        soft: 12000
+        hard: 12000

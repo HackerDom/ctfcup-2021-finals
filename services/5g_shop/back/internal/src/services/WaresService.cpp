@@ -28,10 +28,10 @@ WaresService::Create(int sellerId, const std::string &title, const std::string &
     auto conn = guard.connection->Connection().get();
 
     auto query = Format(
-            HiddenStr("insert into wares values (default, %d, '%s', '%s', %d, %d, %d) returning id;"),
+            HiddenStr("insert into wares values (default, %d, %s, %s, %d, %d, %d) returning id;"),
             sellerId,
-            title.c_str(),
-            description.c_str(),
+            Escape(conn, title).c_str(),
+            Escape(conn, description).c_str(),
             price,
             serviceFee,
             imageId

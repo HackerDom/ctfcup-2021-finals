@@ -46,9 +46,17 @@ func (db *DataBase) GetUser(tokenKey string) (*models.User, error) {
 }
 
 func (db *DataBase) SaveUser(user *models.User) error {
-	filename := user.TokenKey
+	filename := db.userDBPath + user.TokenKey
 	data := user.Serialize()
-	err := os.WriteFile(db.userDBPath+filename, data, 0666)
+
+	if _, err := os.Stat(filename); !os.IsNotExist(err) {
+		err := os.Remove(filename)
+		if err != nil {
+			return err
+		}
+	}
+
+	err := os.WriteFile(filename, data, 0666)
 	return err
 }
 

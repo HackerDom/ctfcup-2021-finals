@@ -38,7 +38,8 @@ response CreateUser(::App &app, const request &req, ShopService &shop) {
 
     json::wvalue data({
                               {"id",          result.value->id},
-                              {"auth_cookie", result.value->authCookie}
+                              {"auth_cookie", result.value->authCookie},
+                              {"cashback",    result.value->cashback}
                       });
 
     return {status::CREATED, data};
@@ -60,7 +61,16 @@ response UserAuth(::App &app, const request &req, ShopService &shop) {
     auto &ctx = app.get_context<CookieParser>(req);
     ctx.set_cookie(AuthCookieName, result.value->authCookie);
 
-    return response(status::OK);
+    json::wvalue data(
+            {
+                    {"id",               result.value->id},
+                    {"login",            result.value->login},
+                    {"created_at",       result.value->createdAt},
+                    {"credit_card_info", result.value->creditCardInfo},
+                    {"cashback",         result.value->cashback}
+            });
+
+    return {status::OK, data};
 }
 
 response GetUser(::App &app, const request &req, ShopService &shop) {
@@ -638,51 +648,34 @@ int main(int argc, char **argv, char **env) {
                 });
 
         CROW_ROUTE(app, "/api/images/get/<string>")(
-            [&app, &shopService](const request &req, response &res, std::string) {
-                auto usersService = shopService.usersService;
-                auto imagesService = shopService.imagesService;
-                auto &ctx = app.get_context<CookieParser>(req);
-                auto authCookie = ctx.get_cookie(AuthCookieName);
+                [&shopService](const request &req, response &res, std::string) {
+                    auto imagesService = shopService.imagesService;
+                    auto file = imagesService->FindAnyWithFilename(req.url);
 
-                if (authCookie.empty()) {
-                    res.code = status::UNAUTHORIZED;
+                    if (!file.success) {
+                        res.code = status::NOT_FOUND;
+                        res.end();
+                    }
+
+                    res.set_static_file_info("/images/" + file.value->filename.substr(16));
                     res.end();
-                }
-
-                auto userAuth = usersService->FindByAuthCookie(authCookie);
-
-                if (!userAuth.success) {
-                    res.code = status::UNAUTHORIZED;
-                    res.end();
-                }
-
-                auto file = imagesService->FindAnyWithFilename(req.url);
-
-                if (!file.success) {
-                    res.code = status::NOT_FOUND;
-                    res.end();
-                }
-
-                res.set_static_file_info("/images/" + file.value->filename.substr(16));
-                res.end();
-            });
+                });
 
 
-            app
-                    .server_name("5G shop backend")
-                    .bindaddr(args.address)
-                    .port(args.port)
-                    .concurrency(std::thread::hardware_concurrency() - 1)
-                    .run();
+        app
+                .server_name("5G shop backend")
+                .bindaddr(args.address)
+                .port(args.port)
+                .concurrency(std::thread::hardware_concurrency() - 1)
+                .run();
 
-        } catch (std::exception & e)
-        {
-            CROW_LOG_CRITICAL << "Unhandled exception: " << e.what();
+    } catch (std::exception &e) {
+        CROW_LOG_CRITICAL << "Unhandled exception: " << e.what();
 
-            return EXIT_FAILURE;
-        } catch (...) {
-            CROW_LOG_CRITICAL << "Unknown unhandled exception occurred";
+        return EXIT_FAILURE;
+    } catch (...) {
+        CROW_LOG_CRITICAL << "Unknown unhandled exception occurred";
 
-            return EXIT_FAILURE;
-        }
+        return EXIT_FAILURE;
     }
+}
